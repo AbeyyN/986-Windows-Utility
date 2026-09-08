@@ -1,0 +1,24 @@
+name: Feature request
+description: Propose a feature, diagnostic, repair action or reversible tweak
+title: "[FEATURE] "
+labels: [enhancement]
+body:
+  - type: textarea
+    id: goal
+    attributes:
+      label: Goal
+      description: What problem should this solve?
+    validations:
+      required: true
+  - type: textarea
+    id: design
+    attributes:
+      label: Proposed behaviour
+      description: Explain detection, apply, verification and rollback where relevant.
+    validations:
+      required: true
+  - type: textarea
+    id: evidence
+    attributes:
+      label: Technical evidence / references
+      description: Registry paths, Microsoft docs, reproducible tests or compatibility notes are useful.

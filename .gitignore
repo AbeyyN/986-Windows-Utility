@@ -1,0 +1,11 @@
+state/
+*.log
+*.tmp
+*.bak
+*.user
+.vs/
+.idea/
+.DS_Store
+Thumbs.db
+artifacts/
+release/

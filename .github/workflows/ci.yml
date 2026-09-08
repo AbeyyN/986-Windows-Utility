@@ -1,0 +1,25 @@
+name: CI
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+permissions:
+  contents: read
+
+jobs:
+  static-validation:
+    runs-on: windows-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Run static tests
+        shell: powershell
+        run: .\tests\Static.Tests.ps1
+      - name: Verify launcher exists
+        shell: powershell
+        run: |
+          if (-not (Test-Path '.\Start-986-Windows-Utility.cmd')) { throw 'Launcher missing' }
+          if (-not (Test-Path '.\bootstrap.ps1')) { throw 'Bootstrap missing' }
