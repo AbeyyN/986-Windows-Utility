@@ -1,0 +1,49 @@
+name: v0.3 Integration Bootstrap
+
+on:
+  push:
+    branches: [ feature/v0.3-doctor ]
+
+permissions:
+  contents: write
+
+jobs:
+  integrate-and-validate:
+    if: ${{ !contains(github.event.head_commit.message, '[v03-integrated]') }}
+    runs-on: windows-latest
+    steps:
+      - name: Checkout feature branch
+        uses: actions/checkout@v4
+        with:
+          ref: feature/v0.3-doctor
+          fetch-depth: 0
+      - name: Apply deterministic v0.3 integration
+        shell: powershell
+        run: python .\tools\apply_v030.py
+      - name: Validate UTF-8
+        shell: powershell
+        run: .\tests\Encoding.Tests.ps1
+      - name: Validate app and modules
+        shell: powershell
+        run: .\tests\Static.Tests.ps1
+      - name: Validate Tweak Intelligence safety
+        shell: powershell
+        run: .\tests\Audit.Tests.ps1
+      - name: Validate Doctor safety
+        shell: powershell
+        run: .\tests\Doctor.Tests.ps1
+      - name: Headless audit smoke test
+        shell: powershell
+        run: .\986-Windows-Utility.ps1 -AuditOnly
+      - name: Headless Doctor smoke test
+        shell: powershell
+        run: .\986-Windows-Utility.ps1 -DoctorOnly
+      - name: Commit validated integration
+        shell: powershell
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -A
+          if (git diff --cached --quiet) { Write-Host 'No integration changes to commit.'; exit 0 }
+          git commit -m "Integrate 986 Doctor v0.3.0 [v03-integrated]"
+          git push origin HEAD:feature/v0.3-doctor
