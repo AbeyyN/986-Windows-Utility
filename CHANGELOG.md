@@ -1,6 +1,19 @@
-﻿# Changelog
+# Changelog
 
 All notable project changes are documented here.
+
+## [0.1.1] - 2026-09-09
+
+### Added
+
+- Windows 11 taskbar `End task` right-click tweak
+- strict UTF-8 repository validation
+- `.editorconfig` encoding and line-ending policy
+
+### Fixed
+
+- README mojibake sequences caused by incorrect character decoding
+- normalized tracked text files to UTF-8
 
 ## [0.1.0] - 2026-09-08
 

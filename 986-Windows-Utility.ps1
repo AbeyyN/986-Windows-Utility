@@ -1,9 +1,9 @@
-﻿#Requires -Version 5.1
+#Requires -Version 5.1
 param([switch]$NoElevation)
 Set-StrictMode -Version 3.0
 $ErrorActionPreference = 'Stop'
 $AppName = '986 Windows Utility'
-$Version = '0.1.0'
+$Version = '0.1.1'
 $Root = Split-Path -Parent $MyInvocation.MyCommand.Path
 $StateDir = Join-Path $Root 'state'
 $StateFile = Join-Path $StateDir 'original-state.json'
@@ -46,6 +46,7 @@ $Tweaks = @(
     [pscustomobject]@{ Id='disable-upload-activity'; Category='Privacy'; Name='Disable uploading user activities'; Path='HKLM:\SOFTWARE\Policies\Microsoft\Windows\System'; Value='UploadUserActivities'; Type='DWord'; Target=0; Risk='LOW'; Balanced=$true }
     [pscustomobject]@{ Id='disable-consumer'; Category='Privacy'; Name='Disable Microsoft consumer experiences'; Path='HKLM:\SOFTWARE\Policies\Microsoft\Windows\CloudContent'; Value='DisableWindowsConsumerFeatures'; Type='DWord'; Target=1; Risk='LOW'; Balanced=$true }
     [pscustomobject]@{ Id='disable-game-capture'; Category='Performance'; Name='Disable Xbox/Game DVR capture'; Path='HKCU:\Software\Microsoft\Windows\CurrentVersion\GameDVR'; Value='AppCaptureEnabled'; Type='DWord'; Target=0; Risk='LOW'; Balanced=$false }
+    [pscustomobject]@{ Id='taskbar-end-task'; Category='Taskbar'; Name='Enable taskbar End task'; Path='HKCU:\Software\Microsoft\Windows\CurrentVersion\Explorer\Advanced\TaskbarDeveloperSettings'; Value='TaskbarEndTask'; Type='DWord'; Target=1; Risk='LOW'; Balanced=$true }
 )
 
 function Write-AppLog([string]$Message) {
@@ -184,7 +185,7 @@ function New-RestorePoint {
     </Grid.RowDefinitions>
     <StackPanel Grid.Row="0" Margin="0,0,0,14">
       <TextBlock Text="986 WINDOWS UTILITY" FontSize="28" FontWeight="Bold" Foreground="#F59E0B"/>
-      <TextBlock Text="State-aware reversible Windows tuning · AbeyyTechXy" Foreground="#9CA3AF" Margin="0,4,0,0"/>
+      <TextBlock Text="State-aware reversible Windows tuning | AbeyyTechXy" Foreground="#9CA3AF" Margin="0,4,0,0"/>
     </StackPanel>
     <Border Grid.Row="1" Background="#111827" BorderBrush="#273244" BorderThickness="1" Padding="10" Margin="0,0,0,10">
       <StackPanel Orientation="Horizontal">
@@ -263,10 +264,10 @@ function Refresh-TweakStatus {
     foreach ($t in $Tweaks) {
         $row = $script:Rows[$t.Id]
         if (Test-TweakActive $t) {
-            $row.Status.Text = if ($state.ContainsKey($t.Id)) { 'ACTIVE · UNDO' } else { 'ACTIVE' }
+            $row.Status.Text = if ($state.ContainsKey($t.Id)) { 'ACTIVE | UNDO' } else { 'ACTIVE' }
             $row.Status.Foreground = '#FBBF24'
         } else {
-            $row.Status.Text = if ($state.ContainsKey($t.Id)) { 'CHANGED · UNDO' } else { 'NOT ACTIVE' }
+            $row.Status.Text = if ($state.ContainsKey($t.Id)) { 'CHANGED | UNDO' } else { 'NOT ACTIVE' }
             $row.Status.Foreground = '#9CA3AF'
         }
     }

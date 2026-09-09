@@ -23,5 +23,8 @@ Current public alpha inventory. `Balanced` means selected by the `986 Balanced` 
 | disable-upload-activity | Privacy | Disable uploading user activities | LOW | yes |
 | disable-consumer | Privacy | Disable Microsoft consumer experiences | LOW | yes |
 | disable-game-capture | Performance | Disable Xbox/Game DVR capture | LOW | no |
+| taskbar-end-task | Taskbar | Enable taskbar End task (Windows 11) | LOW | yes |
+
+> `taskbar-end-task` is Windows 11 only. `End task` force-terminates the selected application and can discard unsaved work.
 
 The source remains authoritative. Compatibility and side-effect documentation will become stricter toward v1.0.
