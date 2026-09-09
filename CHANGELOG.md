@@ -2,6 +2,21 @@
 
 All notable project changes are documented here.
 
+## [0.4.0] - 2026-09-10
+
+### Added
+
+- 986 Profiles selection-only preset engine
+- built-in 986 Balanced, Performance, Laptop and Technician profiles
+- local custom profile save/delete in `state/profiles.json`
+- profile picker with Select Profile, Save Custom and Delete Custom controls
+- headless `-ProfileList` mode
+- WPF profile UI smoke validation and profile safety CI checks
+
+### Safety
+
+Profile selection only changes checkbox selection. It does not call Apply or Undo. Local validation on AbeyyN986 confirmed zero registry changes across all 20 tweak targets during GUI launch, built-in profile selection and custom profile save/delete.
+
 ## [0.3.0] - 2026-09-09
 
 ### Added
