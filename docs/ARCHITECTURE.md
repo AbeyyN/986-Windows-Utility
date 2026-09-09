@@ -1,8 +1,8 @@
 # Architecture
 
-## v0.1 runtime
+## v0.2 runtime
 
-986 Windows Utility v0.1 is a Windows PowerShell 5.1 application with a WPF interface. It intentionally has no external runtime dependency beyond components present on supported Windows installations.
+986 Windows Utility v0.2 is a Windows PowerShell 5.1 application with a WPF interface and a separate read-only Tweak Intelligence module. It intentionally has no external runtime dependency beyond components present on supported Windows installations.
 
 ## Core state model
 
@@ -13,6 +13,7 @@ Undo uses the recorded original state. If the original registry value did not ex
 ## Current components
 
 - `986-Windows-Utility.ps1` — application, tweak metadata, state engine and WPF shell
+- `modules/TweakIntelligence.ps1` — read-only classification, report export and Intelligence UI
 - `Start-986-Windows-Utility.cmd` — local launcher
 - `bootstrap.ps1` — remote bootstrap that downloads the application to a local temporary path before execution
 - `state/` — local runtime state; never committed

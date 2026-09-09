@@ -9,7 +9,7 @@ $badPrefixes = @(
     ([string][char]0xFFFD)
 )
 $files = Get-ChildItem $root -Recurse -File | Where-Object {
-    $_.FullName -notmatch '\\.git\\|\\release\\' -and
+    $_.FullName -notmatch '\\.git\\|\\release\\|\\state\\' -and
     ($extensions -contains $_.Extension.ToLowerInvariant() -or $_.Name -in '.editorconfig','.gitignore','.gitattributes')
 }
 foreach ($file in $files) {

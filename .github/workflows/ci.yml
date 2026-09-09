@@ -21,8 +21,9 @@ jobs:
       - name: Run static tests
         shell: powershell
         run: .\tests\Static.Tests.ps1
-      - name: Verify launcher exists
+      - name: Validate read-only audit module
         shell: powershell
-        run: |
-          if (-not (Test-Path '.\Start-986-Windows-Utility.cmd')) { throw 'Launcher missing' }
-          if (-not (Test-Path '.\bootstrap.ps1')) { throw 'Bootstrap missing' }
+        run: .\tests\Audit.Tests.ps1
+      - name: Headless audit smoke test
+        shell: powershell
+        run: .\986-Windows-Utility.ps1 -AuditOnly

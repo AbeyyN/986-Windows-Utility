@@ -1,14 +1,15 @@
 #Requires -Version 5.1
-param([switch]$NoElevation)
+param([switch]$NoElevation,[switch]$AuditOnly,[switch]$AuditJson)
 Set-StrictMode -Version 3.0
 $ErrorActionPreference = 'Stop'
 $AppName = '986 Windows Utility'
-$Version = '0.1.1'
+$Version = '0.2.0'
 $Root = Split-Path -Parent $MyInvocation.MyCommand.Path
 $StateDir = Join-Path $Root 'state'
 $StateFile = Join-Path $StateDir 'original-state.json'
 $LogFile = Join-Path $StateDir '986-windows-utility.log'
 New-Item -ItemType Directory -Path $StateDir -Force | Out-Null
+$script:LogBox = $null
 
 function Test-IsAdministrator {
     $id = [Security.Principal.WindowsIdentity]::GetCurrent()
@@ -16,7 +17,7 @@ function Test-IsAdministrator {
     return $principal.IsInRole([Security.Principal.WindowsBuiltInRole]::Administrator)
 }
 
-if (-not (Test-IsAdministrator) -and -not $NoElevation) {
+if (-not (Test-IsAdministrator) -and -not $NoElevation -and -not $AuditOnly) {
     $argLine = "-NoProfile -ExecutionPolicy Bypass -File `"$PSCommandPath`" -NoElevation"
     Start-Process powershell.exe -Verb RunAs -ArgumentList $argLine
     exit
@@ -165,6 +166,18 @@ function New-RestorePoint {
     }
 }
 
+$AuditModule = Join-Path $Root 'modules\TweakIntelligence.ps1'
+if (-not (Test-Path $AuditModule)) { throw 'Tweak Intelligence module is missing.' }
+. $AuditModule
+
+if ($AuditOnly) {
+    $report = Get-TweakIntelligenceReport
+    $report.Items | Format-Table Area,Name,Current,Classification -AutoSize
+    Write-Host "Summary: 986=$($report.Summary.'986 Managed') WinUtil-like=$($report.Summary.'WinUtil-like') Windows-like=$($report.Summary.'Windows-like') Custom=$($report.Summary.Custom) Unknown=$($report.Summary.Unknown)"
+    if ($AuditJson) { Write-Host "Exported: $(Export-TweakAuditReport $report)" }
+    exit 0
+}
+
 [xml]$Xaml = @"
 <Window xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml" Title="986 Windows Utility v$Version"
@@ -190,6 +203,8 @@ function New-RestorePoint {
     <Border Grid.Row="1" Background="#111827" BorderBrush="#273244" BorderThickness="1" Padding="10" Margin="0,0,0,10">
       <StackPanel Orientation="Horizontal">
         <Button x:Name="BtnAudit" Content="Audit"/>
+        <Button x:Name="BtnIntelligence" Content="Tweak Intelligence"/>
+        <Button x:Name="BtnExportAudit" Content="Export Audit"/>
         <Button x:Name="BtnBalanced" Content="986 Balanced"/>
         <Button x:Name="BtnAll" Content="Select All"/>
         <Button x:Name="BtnClear" Content="Clear"/>
@@ -227,6 +242,8 @@ $Window = [Windows.Markup.XamlReader]::Load($reader)
 $script:LogBox = $Window.FindName('LogBox')
 $TweakPanel = $Window.FindName('TweakPanel')
 $BtnAudit = $Window.FindName('BtnAudit')
+$BtnIntelligence = $Window.FindName('BtnIntelligence')
+$BtnExportAudit = $Window.FindName('BtnExportAudit')
 $BtnBalanced = $Window.FindName('BtnBalanced')
 $BtnAll = $Window.FindName('BtnAll')
 $BtnClear = $Window.FindName('BtnClear')
@@ -292,6 +309,8 @@ $BtnAudit.Add_Click({
     $active = @($Tweaks | Where-Object { Test-TweakActive $_ }).Count
     Write-AppLog "AUDIT complete: $active / $($Tweaks.Count) target states active"
 })
+$BtnIntelligence.Add_Click({ Show-TweakIntelligenceWindow })
+$BtnExportAudit.Add_Click({ $r=Get-TweakIntelligenceReport; $p=Export-TweakAuditReport $r; [Windows.MessageBox]::Show("Saved read-only audit report:`n$p",'986 Tweak Intelligence') | Out-Null })
 $BtnBalanced.Add_Click({ Set-Selection 'Balanced'; Write-AppLog 'PRESET 986 Balanced selected' })
 $BtnAll.Add_Click({ Set-Selection 'All' })
 $BtnClear.Add_Click({ Set-Selection 'Clear' })

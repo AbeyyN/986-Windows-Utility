@@ -9,7 +9,7 @@ An open-source Windows utility by **AbeyyTechXy / AbeyyN** focused on safe, insp
 [![License](https://img.shields.io/github/license/AbeyyN/986-Windows-Utility?style=for-the-badge)](LICENSE)
 [![Contributors](https://img.shields.io/github/contributors/AbeyyN/986-Windows-Utility?style=for-the-badge)](https://github.com/AbeyyN/986-Windows-Utility/graphs/contributors)
 
-> **Project status:** early public alpha. v0.1.1 extends the reversible tweak engine with taskbar End task support and repository encoding hardening.
+> **Project status:** public alpha v0.2.0. The reversible tweak engine now includes a read-only Tweak Intelligence audit layer.
 
 ## Why 986 Windows Utility?
 
@@ -22,13 +22,16 @@ Detect current state → Snapshot original state → Apply → Verify
 ```
 
 This is the foundation of **986 State-Aware Reversible Tweaks**.
-## v0.1.1 features
+## v0.2.0 features
 
 - Windows-native PowerShell 5.1 + WPF GUI
 - 20 Explorer, Privacy, Performance and Taskbar tweaks
 - `986 Balanced` preset
 - optional Windows 11 taskbar `End task` right-click action
   - Warning: ending a task can discard unsaved work in that application.
+- **986 Tweak Intelligence Engine** with read-only Registry, Policy, Service and Scheduled Task observations
+- cautious `986 Managed`, `WinUtil-like`, `Windows-like`, `Custom` and `Unknown` classifications
+- JSON audit export and headless `-AuditOnly` mode
 - live `ACTIVE` / `NOT ACTIVE` / undo-aware status
 - automatic original-state snapshots before managed changes
 - Apply verification and Undo verification
@@ -45,6 +48,14 @@ irm https://raw.githubusercontent.com/AbeyyN/986-Windows-Utility/main/bootstrap.
 
 Or download the latest release from the GitHub Releases page and run `Start-986-Windows-Utility.cmd`.
 
+Read-only audit from a cloned/release copy:
+
+```powershell
+powershell -NoProfile -ExecutionPolicy Bypass -File .\986-Windows-Utility.ps1 -AuditOnly
+```
+
+Add `-AuditJson` to export the report into the local `state` directory.
+
 > Read the source before running system-modification tools. A restore point is recommended before the first tweak session.
 
 ## Safety model
@@ -56,13 +67,13 @@ A tweak is not considered complete merely because it can write a registry value.
 
 The roadmap extends beyond a debloater into a Windows maintenance platform:
 
-- **986 Tweak Intelligence Engine** — identify managed, WinUtil-like, custom and unknown states
-- diagnostics and repair modules
+- expand Tweak Intelligence signatures and confidence metadata
+- **v0.3 diagnostics and repair modules**
 - technician-oriented presets and tools
 - richer tweak metadata and compatibility rules
 - automated release validation
 
-See [ROADMAP.md](ROADMAP.md) and [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md).
+See [ROADMAP.md](ROADMAP.md), [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) and [docs/INTELLIGENCE.md](docs/INTELLIGENCE.md).
 
 ## Contributing
 

@@ -7,12 +7,13 @@
 - document every shipped tweak and side effect
 - improve snapshot integrity and recovery messages
 
-## v0.2 — Foreign Tweak Audit
+## v0.2 — Tweak Intelligence (shipped)
 
-- inventory relevant registry, policy, service and scheduled-task states
-- classify states as Windows-like, 986-managed, WinUtil-like, custom or unknown
-- review/import foreign state into a 986 baseline
+- read-only registry, policy, service and scheduled-task observations
+- classify states as Windows-like, 986 Managed, WinUtil-like, Custom or Unknown
+- JSON export and headless audit mode
 - never claim exact tool attribution without reliable evidence
+- next v0.2.x: confidence metadata and broader signature coverage
 
 ## v0.3 — Diagnostics & Repair
 
