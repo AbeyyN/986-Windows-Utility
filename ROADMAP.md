@@ -23,7 +23,7 @@
 - exportable privacy-hardened diagnostics report
 - headless Doctor mode for CI and technician workflows
 
-## v0.4 — Profiles (in development)
+## v0.4 — Profiles (shipped)
 
 - 986 Balanced selection profile
 - 986 Performance selection profile

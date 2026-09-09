@@ -3,7 +3,7 @@ param([switch]$NoElevation,[switch]$AuditOnly,[switch]$AuditJson,[switch]$Doctor
 Set-StrictMode -Version 3.0
 $ErrorActionPreference = 'Stop'
 $AppName = '986 Windows Utility'
-$Version = '0.4.0-alpha.1'
+$Version = '0.4.0'
 $Root = Split-Path -Parent $MyInvocation.MyCommand.Path
 $StateDir = Join-Path $Root 'state'
 $StateFile = Join-Path $StateDir 'original-state.json'
