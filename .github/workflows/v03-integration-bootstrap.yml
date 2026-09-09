@@ -19,7 +19,7 @@ jobs:
           fetch-depth: 0
       - name: Apply deterministic v0.3 integration
         shell: powershell
-        run: python .\tools\apply_v030.py
+        run: python .\tools\run_v030.py
       - name: Validate UTF-8
         shell: powershell
         run: .\tests\Encoding.Tests.ps1
