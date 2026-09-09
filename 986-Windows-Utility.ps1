@@ -1,9 +1,9 @@
 #Requires -Version 5.1
-param([switch]$NoElevation,[switch]$AuditOnly,[switch]$AuditJson)
+param([switch]$NoElevation,[switch]$AuditOnly,[switch]$AuditJson,[switch]$DoctorOnly,[switch]$DoctorJson)
 Set-StrictMode -Version 3.0
 $ErrorActionPreference = 'Stop'
 $AppName = '986 Windows Utility'
-$Version = '0.2.0'
+$Version = '0.3.0'
 $Root = Split-Path -Parent $MyInvocation.MyCommand.Path
 $StateDir = Join-Path $Root 'state'
 $StateFile = Join-Path $StateDir 'original-state.json'
@@ -17,7 +17,7 @@ function Test-IsAdministrator {
     return $principal.IsInRole([Security.Principal.WindowsBuiltInRole]::Administrator)
 }
 
-if (-not (Test-IsAdministrator) -and -not $NoElevation -and -not $AuditOnly) {
+if (-not (Test-IsAdministrator) -and -not $NoElevation -and -not $AuditOnly -and -not $DoctorOnly) {
     $argLine = "-NoProfile -ExecutionPolicy Bypass -File `"$PSCommandPath`" -NoElevation"
     Start-Process powershell.exe -Verb RunAs -ArgumentList $argLine
     exit
@@ -170,11 +170,23 @@ $AuditModule = Join-Path $Root 'modules\TweakIntelligence.ps1'
 if (-not (Test-Path $AuditModule)) { throw 'Tweak Intelligence module is missing.' }
 . $AuditModule
 
+$DoctorModule = Join-Path $Root 'modules\Doctor.ps1'
+if (-not (Test-Path $DoctorModule)) { throw '986 Doctor module is missing.' }
+. $DoctorModule
+
 if ($AuditOnly) {
     $report = Get-TweakIntelligenceReport
     $report.Items | Format-Table Area,Name,Current,Classification -AutoSize
     Write-Host "Summary: 986=$($report.Summary.'986 Managed') WinUtil-like=$($report.Summary.'WinUtil-like') Windows-like=$($report.Summary.'Windows-like') Custom=$($report.Summary.Custom) Unknown=$($report.Summary.Unknown)"
     if ($AuditJson) { Write-Host "Exported: $(Export-TweakAuditReport $report)" }
+    exit 0
+}
+
+if ($DoctorOnly) {
+    $report = Get-DoctorReport
+    $report.Checks | Format-Table Area,Name,Value,Status -AutoSize
+    Write-Host "Doctor: Overall=$($report.Overall) Attention=$($report.Attention) Unknown=$($report.Unknown)"
+    if ($DoctorJson) { Write-Host "Exported: $(Export-DoctorReport $report)" }
     exit 0
 }
 
@@ -201,16 +213,18 @@ if ($AuditOnly) {
       <TextBlock Text="State-aware reversible Windows tuning | AbeyyTechXy" Foreground="#9CA3AF" Margin="0,4,0,0"/>
     </StackPanel>
     <Border Grid.Row="1" Background="#111827" BorderBrush="#273244" BorderThickness="1" Padding="10" Margin="0,0,0,10">
-      <StackPanel Orientation="Horizontal">
+      <WrapPanel>
         <Button x:Name="BtnAudit" Content="Audit"/>
         <Button x:Name="BtnIntelligence" Content="Tweak Intelligence"/>
         <Button x:Name="BtnExportAudit" Content="Export Audit"/>
+        <Button x:Name="BtnDoctor" Content="986 Doctor"/>
+        <Button x:Name="BtnExportDoctor" Content="Export Doctor"/>
         <Button x:Name="BtnBalanced" Content="986 Balanced"/>
         <Button x:Name="BtnAll" Content="Select All"/>
         <Button x:Name="BtnClear" Content="Clear"/>
         <Button x:Name="BtnRestorePoint" Content="Create Restore Point"/>
         <Button x:Name="BtnOpenState" Content="Open State Folder"/>
-      </StackPanel>
+      </WrapPanel>
     </Border>
     <Border Grid.Row="2" Background="#0F172A" BorderBrush="#273244" BorderThickness="1" Padding="8" Margin="0,0,0,10">
       <ScrollViewer VerticalScrollBarVisibility="Auto">
@@ -244,6 +258,8 @@ $TweakPanel = $Window.FindName('TweakPanel')
 $BtnAudit = $Window.FindName('BtnAudit')
 $BtnIntelligence = $Window.FindName('BtnIntelligence')
 $BtnExportAudit = $Window.FindName('BtnExportAudit')
+$BtnDoctor = $Window.FindName('BtnDoctor')
+$BtnExportDoctor = $Window.FindName('BtnExportDoctor')
 $BtnBalanced = $Window.FindName('BtnBalanced')
 $BtnAll = $Window.FindName('BtnAll')
 $BtnClear = $Window.FindName('BtnClear')
@@ -311,6 +327,8 @@ $BtnAudit.Add_Click({
 })
 $BtnIntelligence.Add_Click({ Show-TweakIntelligenceWindow })
 $BtnExportAudit.Add_Click({ $r=Get-TweakIntelligenceReport; $p=Export-TweakAuditReport $r; [Windows.MessageBox]::Show("Saved read-only audit report:`n$p",'986 Tweak Intelligence') | Out-Null })
+$BtnDoctor.Add_Click({ Show-DoctorWindow })
+$BtnExportDoctor.Add_Click({ $r=Get-DoctorReport; $p=Export-DoctorReport $r; [Windows.MessageBox]::Show("Saved Doctor report:`n$p",'986 Doctor') | Out-Null })
 $BtnBalanced.Add_Click({ Set-Selection 'Balanced'; Write-AppLog 'PRESET 986 Balanced selected' })
 $BtnAll.Add_Click({ Set-Selection 'All' })
 $BtnClear.Add_Click({ Set-Selection 'Clear' })

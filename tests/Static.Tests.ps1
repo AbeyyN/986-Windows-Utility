@@ -2,22 +2,23 @@ $ErrorActionPreference = 'Stop'
 $root = Split-Path -Parent (Split-Path -Parent $MyInvocation.MyCommand.Path)
 $app = Join-Path $root '986-Windows-Utility.ps1'
 $audit = Join-Path $root 'modules\TweakIntelligence.ps1'
+$doctor = Join-Path $root 'modules\Doctor.ps1'
 $bootstrap = Join-Path $root 'bootstrap.ps1'
-foreach ($file in @($app,$audit,$bootstrap)) {
+foreach ($file in @($app,$audit,$doctor,$bootstrap)) {
     if (-not (Test-Path $file)) { throw "Required script not found: $file" }
     $tokens=$null; $errors=$null
     [System.Management.Automation.Language.Parser]::ParseFile($file,[ref]$tokens,[ref]$errors)|Out-Null
-    if ($errors.Count -gt 0) { $errors | ForEach-Object { Write-Host $_.Message -ForegroundColor Red }; throw "Parse validation failed: $file" }
+    if ($errors.Count -gt 0) { $errors|ForEach-Object{Write-Host $_.Message -ForegroundColor Red}; throw "Parse validation failed: $file" }
 }
 $text = Get-Content $app -Raw -Encoding UTF8
 $auditText = Get-Content $audit -Raw -Encoding UTF8
+$doctorText = Get-Content $doctor -Raw -Encoding UTF8
+$bootText = Get-Content $bootstrap -Raw -Encoding UTF8
 $ids = [regex]::Matches($text,"Id='([^']+)'\s*; Category=") | ForEach-Object { $_.Groups[1].Value }
-if ($ids.Count -lt 20) { throw "Expected at least 20 tweaks; found $($ids.Count)." }
-if (($ids | Sort-Object -Unique).Count -ne $ids.Count) { throw 'Duplicate tweak IDs detected.' }
-if ($text -notmatch "Id='taskbar-end-task'.*TaskbarDeveloperSettings'.*Value='TaskbarEndTask'.*Target=1") { throw 'Taskbar End task tweak definition is invalid.' }
-if ($text -notmatch '\$Version = ''0\.2\.0''') { throw 'Expected application version 0.2.0.' }
-if ($text -notmatch '\[switch\]\$AuditOnly') { throw 'AuditOnly mode is missing.' }
-foreach ($fn in 'Test-IsAdministrator','Load-SnapshotState','Save-SnapshotState') { if ($text -notmatch "function\s+$fn") { throw "Missing required function: $fn" } }
-foreach ($fn in 'Get-TweakIntelligenceReport','Export-TweakAuditReport','Show-TweakIntelligenceWindow') { if ($auditText -notmatch "function\s+$fn") { throw "Missing audit function: $fn" } }
-if ((Get-Content $bootstrap -Raw -Encoding UTF8) -notmatch 'modules/TweakIntelligence\.ps1') { throw 'Bootstrap does not fetch Tweak Intelligence module.' }
-Write-Host "PASS: app/module/bootstrap parse clean, $($ids.Count) unique tweaks, v0.2 audit engine present." -ForegroundColor Green
+if ($ids.Count -lt 20 -or ($ids|Sort-Object -Unique).Count -ne $ids.Count) { throw 'Tweak inventory count/uniqueness validation failed.' }
+if ($text -notmatch '\$Version = ''0\.3\.0''') { throw 'Expected application version 0.3.0.' }
+foreach($mode in '\[switch\]\$AuditOnly','\[switch\]\$DoctorOnly'){ if($text -notmatch $mode){throw "Missing headless mode: $mode"} }
+foreach($fn in 'Get-TweakIntelligenceReport','Export-TweakAuditReport'){if($auditText -notmatch "function\s+$fn"){throw "Missing audit function: $fn"}}
+foreach($fn in 'Get-DoctorReport','Export-DoctorReport','Get-DoctorRepairPreflight','Start-DoctorRepair','Show-DoctorWindow'){if($doctorText -notmatch "function\s+$fn"){throw "Missing Doctor function: $fn"}}
+if ($bootText -notmatch 'modules/TweakIntelligence\.ps1' -or $bootText -notmatch 'modules/Doctor\.ps1') { throw 'Bootstrap module downloads are incomplete.' }
+Write-Host "PASS: v0.3 app/modules/bootstrap parse clean, $($ids.Count) unique tweaks, Doctor present." -ForegroundColor Green

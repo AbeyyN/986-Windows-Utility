@@ -24,6 +24,12 @@ jobs:
       - name: Validate read-only audit module
         shell: powershell
         run: .\tests\Audit.Tests.ps1
+      - name: Validate Doctor safety model
+        shell: powershell
+        run: .\tests\Doctor.Tests.ps1
       - name: Headless audit smoke test
         shell: powershell
         run: .\986-Windows-Utility.ps1 -AuditOnly
+      - name: Headless Doctor smoke test
+        shell: powershell
+        run: .\986-Windows-Utility.ps1 -DoctorOnly
