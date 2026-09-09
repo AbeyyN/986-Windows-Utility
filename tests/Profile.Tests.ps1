@@ -23,7 +23,7 @@ foreach ($term in $forbidden) {
 $ids = [regex]::Matches($appText,"Id='([^']+)'\s*; Category=") | ForEach-Object { $_.Groups[1].Value }
 $balancedIds = [regex]::Matches($appText,'Id=''([^'']+)''[^\r\n]+Balanced=\$true') | ForEach-Object { $_.Groups[1].Value }
 
-$StateDir = Join-Path $env:TEMP ('986-profile-test-' + [guid]::NewGuid().ToString('N'))
+$StateDir = Join-Path ([IO.Path]::GetTempPath()) ('986-profile-test-' + [guid]::NewGuid().ToString('N'))
 function Write-AppLog([string]$Message) { }
 . $module
 
