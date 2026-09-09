@@ -1,0 +1,36 @@
+name: Fix v0.3.0 Release Notes
+
+on:
+  push:
+    branches: [ main ]
+    paths: [ '.github/workflows/fix-v030-release-notes.yml' ]
+
+permissions:
+  contents: write
+
+jobs:
+  fix-notes:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Rewrite release notes as ASCII-safe text
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          cat > /tmp/v030-notes.md <<'EOF'
+          ## 986 Windows Utility v0.3.0 - 986 Doctor
+
+          This release adds the **986 Doctor** diagnostics and explicit-repair layer.
+
+          ### Highlights
+          - Windows health dashboard for system, storage, servicing, security and network signals
+          - privacy-hardened Doctor JSON reports
+          - headless `-DoctorOnly` and optional `-DoctorJson`
+          - DISM CheckHealth / ScanHealth / RestoreHealth
+          - SFC scan/repair, DNS flush and Winsock reset
+          - repair preflight, explicit confirmation and timestamped logs
+          - Tweak Intelligence and the 20 state-aware reversible tweaks remain included
+
+          ### Safety
+          Doctor refresh/report paths are read-only. System-changing repair actions require explicit user selection and confirmation; no repair runs automatically.
+          EOF
+          gh release edit v0.3.0 --repo AbeyyN/986-Windows-Utility --notes-file /tmp/v030-notes.md
