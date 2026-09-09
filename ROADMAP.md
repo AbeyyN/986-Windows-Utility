@@ -15,12 +15,13 @@
 - never claim exact tool attribution without reliable evidence
 - next v0.2.x: confidence metadata and broader signature coverage
 
-## v0.3 — Diagnostics & Repair
+## v0.3 — Diagnostics & Repair (implemented)
 
 - Windows health dashboard
-- network and update diagnostics
-- repair actions with preflight checks and logs
-- exportable diagnostics report
+- system, storage, Defender, network and servicing diagnostics
+- repair actions with preflight checks, confirmation and logs
+- exportable privacy-hardened diagnostics report
+- headless Doctor mode for CI and technician workflows
 
 ## v0.4 — Profiles
 

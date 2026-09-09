@@ -9,7 +9,7 @@ An open-source Windows utility by **AbeyyTechXy / AbeyyN** focused on safe, insp
 [![License](https://img.shields.io/github/license/AbeyyN/986-Windows-Utility?style=for-the-badge)](LICENSE)
 [![Contributors](https://img.shields.io/github/contributors/AbeyyN/986-Windows-Utility?style=for-the-badge)](https://github.com/AbeyyN/986-Windows-Utility/graphs/contributors)
 
-> **Project status:** public alpha v0.2.0. The reversible tweak engine now includes a read-only Tweak Intelligence audit layer.
+> **Project status:** public alpha v0.3.0. Tweak Intelligence is joined by 986 Doctor diagnostics, preflighted repair actions and exportable health reports.
 
 ## Why 986 Windows Utility?
 
@@ -22,7 +22,7 @@ Detect current state → Snapshot original state → Apply → Verify
 ```
 
 This is the foundation of **986 State-Aware Reversible Tweaks**.
-## v0.2.0 features
+## v0.3.0 features
 
 - Windows-native PowerShell 5.1 + WPF GUI
 - 20 Explorer, Privacy, Performance and Taskbar tweaks
@@ -32,6 +32,10 @@ This is the foundation of **986 State-Aware Reversible Tweaks**.
 - **986 Tweak Intelligence Engine** with read-only Registry, Policy, Service and Scheduled Task observations
 - cautious `986 Managed`, `WinUtil-like`, `Windows-like`, `Custom` and `Unknown` classifications
 - JSON audit export and headless `-AuditOnly` mode
+- **986 Doctor** health dashboard for system, storage, servicing, security and network signals
+- Doctor preflight plus explicit DISM, SFC, DNS flush and Winsock repair actions
+- timestamped repair logs and privacy-hardened Doctor JSON reports
+- headless `-DoctorOnly` and optional `-DoctorJson` modes
 - live `ACTIVE` / `NOT ACTIVE` / undo-aware status
 - automatic original-state snapshots before managed changes
 - Apply verification and Undo verification
@@ -56,6 +60,14 @@ powershell -NoProfile -ExecutionPolicy Bypass -File .\986-Windows-Utility.ps1 -A
 
 Add `-AuditJson` to export the report into the local `state` directory.
 
+Headless Doctor check:
+
+```powershell
+powershell -NoProfile -ExecutionPolicy Bypass -File .\986-Windows-Utility.ps1 -DoctorOnly
+```
+
+Add `-DoctorJson` to export a privacy-hardened Doctor report.
+
 > Read the source before running system-modification tools. A restore point is recommended before the first tweak session.
 
 ## Safety model
@@ -68,12 +80,12 @@ A tweak is not considered complete merely because it can write a registry value.
 The roadmap extends beyond a debloater into a Windows maintenance platform:
 
 - expand Tweak Intelligence signatures and confidence metadata
-- **v0.3 diagnostics and repair modules**
+- **v0.4 profiles and technician presets**
 - technician-oriented presets and tools
 - richer tweak metadata and compatibility rules
 - automated release validation
 
-See [ROADMAP.md](ROADMAP.md), [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) and [docs/INTELLIGENCE.md](docs/INTELLIGENCE.md).
+See [ROADMAP.md](ROADMAP.md), [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) and [docs/INTELLIGENCE.md](docs/INTELLIGENCE.md) and [docs/DOCTOR.md](docs/DOCTOR.md).
 
 ## Contributing
 

@@ -2,6 +2,24 @@
 
 All notable project changes are documented here.
 
+## [0.3.0] - 2026-09-09
+
+### Added
+
+- 986 Doctor system health dashboard
+- system, storage, servicing, Defender and network diagnostics
+- pending reboot and repair-source connectivity signals
+- privacy-hardened Doctor JSON report export
+- headless `-DoctorOnly` and optional `-DoctorJson` modes
+- DISM CheckHealth, ScanHealth and RestoreHealth actions
+- SFC scan/repair, DNS flush and Winsock reset actions
+- repair preflight, explicit confirmation and timestamped logs
+- CI Doctor safety validation and headless smoke test
+
+### Safety
+
+Doctor refresh and report export are read-only. Actions that can change Windows state require explicit user selection and a confirmation dialog; no repair runs automatically.
+
 ## [0.2.0] - 2026-09-09
 
 ### Added
