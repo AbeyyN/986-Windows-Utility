@@ -1,5 +1,5 @@
 name: v0.4 Profile Integration
-# rerun after profile-test regex fix
+# rerun after portable temp-path fix
 
 on:
   push:
