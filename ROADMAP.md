@@ -23,13 +23,14 @@
 - exportable privacy-hardened diagnostics report
 - headless Doctor mode for CI and technician workflows
 
-## v0.4 — Profiles
+## v0.4 — Profiles (shipped)
 
-- 986 Balanced
-- 986 Performance
-- 986 Laptop
-- 986 Technician
-- user-defined profiles
+- 986 Balanced selection profile
+- 986 Performance selection profile
+- conservative 986 Laptop profile
+- 986 Technician visibility/troubleshooting profile
+- user-defined local profiles
+- profile actions remain selection-only; Apply/Undo stays explicit and reversible
 
 ## v1.0 — Stable
 
