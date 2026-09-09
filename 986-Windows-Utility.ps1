@@ -1,9 +1,9 @@
 #Requires -Version 5.1
-param([switch]$NoElevation,[switch]$AuditOnly,[switch]$AuditJson,[switch]$DoctorOnly,[switch]$DoctorJson)
+param([switch]$NoElevation,[switch]$AuditOnly,[switch]$AuditJson,[switch]$DoctorOnly,[switch]$DoctorJson,[switch]$ProfileList)
 Set-StrictMode -Version 3.0
 $ErrorActionPreference = 'Stop'
 $AppName = '986 Windows Utility'
-$Version = '0.3.0'
+$Version = '0.4.0-alpha.1'
 $Root = Split-Path -Parent $MyInvocation.MyCommand.Path
 $StateDir = Join-Path $Root 'state'
 $StateFile = Join-Path $StateDir 'original-state.json'
@@ -17,7 +17,7 @@ function Test-IsAdministrator {
     return $principal.IsInRole([Security.Principal.WindowsBuiltInRole]::Administrator)
 }
 
-if (-not (Test-IsAdministrator) -and -not $NoElevation -and -not $AuditOnly -and -not $DoctorOnly) {
+if (-not (Test-IsAdministrator) -and -not $NoElevation -and -not $AuditOnly -and -not $DoctorOnly -and -not $ProfileList) {
     $argLine = "-NoProfile -ExecutionPolicy Bypass -File `"$PSCommandPath`" -NoElevation"
     Start-Process powershell.exe -Verb RunAs -ArgumentList $argLine
     exit
@@ -26,6 +26,7 @@ if (-not (Test-IsAdministrator) -and -not $NoElevation -and -not $AuditOnly -and
 Add-Type -AssemblyName PresentationFramework
 Add-Type -AssemblyName PresentationCore
 Add-Type -AssemblyName WindowsBase
+Add-Type -AssemblyName Microsoft.VisualBasic
 
 $Tweaks = @(
     [pscustomobject]@{ Id='show-ext'; Category='Explorer'; Name='Show file extensions'; Path='HKCU:\Software\Microsoft\Windows\CurrentVersion\Explorer\Advanced'; Value='HideFileExt'; Type='DWord'; Target=0; Risk='LOW'; Balanced=$true }
@@ -174,6 +175,15 @@ $DoctorModule = Join-Path $Root 'modules\Doctor.ps1'
 if (-not (Test-Path $DoctorModule)) { throw '986 Doctor module is missing.' }
 . $DoctorModule
 
+$ProfilesModule = Join-Path $Root 'modules\Profiles.ps1'
+if (-not (Test-Path $ProfilesModule)) { throw '986 Profiles module is missing.' }
+. $ProfilesModule
+
+if ($ProfileList) {
+    Get-986BuiltInProfiles | Select-Object Name,Description,@{N='Tweaks';E={@($_.TweakIds).Count}} | Format-Table -AutoSize
+    exit 0
+}
+
 if ($AuditOnly) {
     $report = Get-TweakIntelligenceReport
     $report.Items | Format-Table Area,Name,Current,Classification -AutoSize
@@ -219,7 +229,10 @@ if ($DoctorOnly) {
         <Button x:Name="BtnExportAudit" Content="Export Audit"/>
         <Button x:Name="BtnDoctor" Content="986 Doctor"/>
         <Button x:Name="BtnExportDoctor" Content="Export Doctor"/>
-        <Button x:Name="BtnBalanced" Content="986 Balanced"/>
+        <ComboBox x:Name="ProfilePicker" Width="180" Margin="0,0,8,0" Padding="8,5" Background="#1F2937" Foreground="#F9FAFB"/>
+        <Button x:Name="BtnProfileSelect" Content="Select Profile"/>
+        <Button x:Name="BtnProfileSave" Content="Save Custom"/>
+        <Button x:Name="BtnProfileDelete" Content="Delete Custom"/>
         <Button x:Name="BtnAll" Content="Select All"/>
         <Button x:Name="BtnClear" Content="Clear"/>
         <Button x:Name="BtnRestorePoint" Content="Create Restore Point"/>
@@ -260,7 +273,10 @@ $BtnIntelligence = $Window.FindName('BtnIntelligence')
 $BtnExportAudit = $Window.FindName('BtnExportAudit')
 $BtnDoctor = $Window.FindName('BtnDoctor')
 $BtnExportDoctor = $Window.FindName('BtnExportDoctor')
-$BtnBalanced = $Window.FindName('BtnBalanced')
+$ProfilePicker = $Window.FindName('ProfilePicker')
+$BtnProfileSelect = $Window.FindName('BtnProfileSelect')
+$BtnProfileSave = $Window.FindName('BtnProfileSave')
+$BtnProfileDelete = $Window.FindName('BtnProfileDelete')
 $BtnAll = $Window.FindName('BtnAll')
 $BtnClear = $Window.FindName('BtnClear')
 $BtnRestorePoint = $Window.FindName('BtnRestorePoint')
@@ -313,11 +329,31 @@ function Get-SelectedTweaks {
 function Set-Selection([string]$Mode) {
     foreach ($t in $Tweaks) {
         switch ($Mode) {
-            'Balanced' { $script:Rows[$t.Id].Check.IsChecked = [bool]$t.Balanced }
-            'All'      { $script:Rows[$t.Id].Check.IsChecked = $true }
-            'Clear'    { $script:Rows[$t.Id].Check.IsChecked = $false }
+            'All'   { $script:Rows[$t.Id].Check.IsChecked = $true }
+            'Clear' { $script:Rows[$t.Id].Check.IsChecked = $false }
         }
     }
+}
+
+function Refresh-ProfilePicker([string]$Preferred='986 Balanced') {
+    $ProfilePicker.Items.Clear()
+    foreach ($name in @(Get-986ProfileNames)) { [void]$ProfilePicker.Items.Add($name) }
+    if ($ProfilePicker.Items.Contains($Preferred)) {
+        $ProfilePicker.SelectedItem = $Preferred
+    } elseif ($ProfilePicker.Items.Count -gt 0) {
+        $ProfilePicker.SelectedIndex = 0
+    }
+}
+
+function Select-986Profile([string]$Name) {
+    if ([string]::IsNullOrWhiteSpace($Name)) { return }
+    $requested = @(Get-986ProfileTweakIds $Name)
+    $known = @($Tweaks | ForEach-Object { $_.Id })
+    $valid = @($requested | Where-Object { $known -contains $_ })
+    $missing = @($requested | Where-Object { $known -notcontains $_ })
+    foreach ($t in $Tweaks) { $script:Rows[$t.Id].Check.IsChecked = ($valid -contains $t.Id) }
+    Write-AppLog "PROFILE SELECT '$Name' | selected=$($valid.Count) missing=$($missing.Count)"
+    if ($missing.Count) { Write-AppLog "PROFILE WARN '$Name' unknown IDs: $($missing -join ', ')" }
 }
 
 $BtnAudit.Add_Click({
@@ -329,7 +365,29 @@ $BtnIntelligence.Add_Click({ Show-TweakIntelligenceWindow })
 $BtnExportAudit.Add_Click({ $r=Get-TweakIntelligenceReport; $p=Export-TweakAuditReport $r; [Windows.MessageBox]::Show("Saved read-only audit report:`n$p",'986 Tweak Intelligence') | Out-Null })
 $BtnDoctor.Add_Click({ Show-DoctorWindow })
 $BtnExportDoctor.Add_Click({ $r=Get-DoctorReport; $p=Export-DoctorReport $r; [Windows.MessageBox]::Show("Saved Doctor report:`n$p",'986 Doctor') | Out-Null })
-$BtnBalanced.Add_Click({ Set-Selection 'Balanced'; Write-AppLog 'PRESET 986 Balanced selected' })
+$BtnProfileSelect.Add_Click({
+    try { Select-986Profile ([string]$ProfilePicker.SelectedItem) }
+    catch { [Windows.MessageBox]::Show($_.Exception.Message,'986 Profiles') | Out-Null }
+})
+$BtnProfileSave.Add_Click({
+    $selected = Get-SelectedTweaks
+    if ($selected.Count -eq 0) { [Windows.MessageBox]::Show('Select at least one tweak before saving a custom profile.','986 Profiles') | Out-Null; return }
+    $name = [Microsoft.VisualBasic.Interaction]::InputBox('Name this custom profile:','986 Profiles','My Profile')
+    if ([string]::IsNullOrWhiteSpace($name)) { return }
+    try {
+        [void](Save-986CustomProfile $name @($selected | ForEach-Object { $_.Id }))
+        Refresh-ProfilePicker $name.Trim()
+        [Windows.MessageBox]::Show("Saved custom profile: $($name.Trim())",'986 Profiles') | Out-Null
+    } catch { [Windows.MessageBox]::Show($_.Exception.Message,'986 Profiles') | Out-Null }
+})
+$BtnProfileDelete.Add_Click({
+    $name = [string]$ProfilePicker.SelectedItem
+    if ([string]::IsNullOrWhiteSpace($name)) { return }
+    if (Test-986BuiltInProfileName $name) { [Windows.MessageBox]::Show('Built-in profiles cannot be deleted.','986 Profiles') | Out-Null; return }
+    $answer = [Windows.MessageBox]::Show("Delete custom profile '$name'?",'986 Profiles',[Windows.MessageBoxButton]::YesNo,[Windows.MessageBoxImage]::Warning)
+    if ($answer -ne [Windows.MessageBoxResult]::Yes) { return }
+    if (Remove-986CustomProfile $name) { Refresh-ProfilePicker '986 Balanced'; Select-986Profile '986 Balanced' }
+})
 $BtnAll.Add_Click({ Set-Selection 'All' })
 $BtnClear.Add_Click({ Set-Selection 'Clear' })
 $BtnRestorePoint.Add_Click({ [void](New-RestorePoint) })
@@ -356,7 +414,8 @@ $BtnUndo.Add_Click({
 })
 
 Refresh-TweakStatus
-Set-Selection 'Balanced'
+Refresh-ProfilePicker '986 Balanced'
+Select-986Profile '986 Balanced'
 Write-AppLog "$AppName v$Version started | Admin=$(Test-IsAdministrator) | Host=$env:COMPUTERNAME"
 Write-AppLog "Baseline loaded. No changes are made until Apply Selected is pressed."
 [void]$Window.ShowDialog()

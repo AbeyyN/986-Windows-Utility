@@ -9,7 +9,7 @@ An open-source Windows utility by **AbeyyTechXy / AbeyyN** focused on safe, insp
 [![License](https://img.shields.io/github/license/AbeyyN/986-Windows-Utility?style=for-the-badge)](LICENSE)
 [![Contributors](https://img.shields.io/github/contributors/AbeyyN/986-Windows-Utility?style=for-the-badge)](https://github.com/AbeyyN/986-Windows-Utility/graphs/contributors)
 
-> **Project status:** public alpha v0.3.0. Tweak Intelligence is joined by 986 Doctor diagnostics, preflighted repair actions and exportable health reports.
+> **Project status:** v0.4.0-alpha.1 development line. Profiles are selection-only presets layered on the existing reversible Apply/Undo engine.
 
 ## Why 986 Windows Utility?
 
@@ -22,11 +22,13 @@ Detect current state → Snapshot original state → Apply → Verify
 ```
 
 This is the foundation of **986 State-Aware Reversible Tweaks**.
-## v0.3.0 features
+## v0.4.0-alpha.1 development features
 
 - Windows-native PowerShell 5.1 + WPF GUI
 - 20 Explorer, Privacy, Performance and Taskbar tweaks
-- `986 Balanced` preset
+- **986 Profiles**: Balanced, Performance, Laptop and Technician built-ins
+- user-defined custom profiles stored locally in `state/profiles.json`
+- selecting a profile only changes checkbox selection; it never applies tweaks automatically
 - optional Windows 11 taskbar `End task` right-click action
   - Warning: ending a task can discard unsaved work in that application.
 - **986 Tweak Intelligence Engine** with read-only Registry, Policy, Service and Scheduled Task observations
@@ -80,12 +82,12 @@ A tweak is not considered complete merely because it can write a registry value.
 The roadmap extends beyond a debloater into a Windows maintenance platform:
 
 - expand Tweak Intelligence signatures and confidence metadata
-- **v0.4 profiles and technician presets**
+- mature v0.4 profile UX and expand safe profile-specific tweak coverage
 - technician-oriented presets and tools
 - richer tweak metadata and compatibility rules
 - automated release validation
 
-See [ROADMAP.md](ROADMAP.md), [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) and [docs/INTELLIGENCE.md](docs/INTELLIGENCE.md) and [docs/DOCTOR.md](docs/DOCTOR.md).
+See [ROADMAP.md](ROADMAP.md), [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) and [docs/INTELLIGENCE.md](docs/INTELLIGENCE.md) and [docs/DOCTOR.md](docs/DOCTOR.md) and [docs/PROFILES.md](docs/PROFILES.md).
 
 ## Contributing
 
