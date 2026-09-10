@@ -4,41 +4,43 @@
 $script:BuiltIn986Profiles = @(
     [pscustomobject]@{
         Name='986 Balanced'
-        Description='Recommended general-purpose 986 selection.'
+        Description='General-purpose Windows preference tweaks; no Policy enforcement.'
         TweakIds=@(
             'show-ext','open-thispc','disable-adid','disable-tailored','disable-feedback',
             'disable-tips','disable-silentapps','disable-pane-suggestions','disable-subscribed',
-            'startup-delay','disable-activity-feed','disable-publish-activity','disable-upload-activity',
-            'disable-consumer','taskbar-end-task'
+            'startup-delay','taskbar-end-task','hide-task-view','hide-widgets','hide-taskbar-search',
+            'disable-start-recommendations'
         )
     },
     [pscustomobject]@{
         Name='986 Performance'
-        Description='Balanced profile plus the current low-risk performance-oriented selection.'
+        Description='Balanced plus user-editable gaming and visual performance preferences.'
         TweakIds=@(
-            'show-ext','open-thispc','disable-adid','disable-tailored','disable-feedback',
-            'disable-tips','disable-silentapps','disable-pane-suggestions','disable-subscribed',
-            'startup-delay','disable-activity-feed','disable-publish-activity','disable-upload-activity',
-            'disable-consumer','disable-game-capture','taskbar-end-task'
+            'show-ext','open-thispc','disable-adid','disable-tailored','disable-feedback','disable-tips',
+            'disable-silentapps','disable-pane-suggestions','disable-subscribed','startup-delay',
+            'taskbar-end-task','hide-task-view','hide-widgets','hide-taskbar-search',
+            'disable-start-recommendations','disable-game-capture','enable-game-mode','disable-transparency'
         )
     },
+
     [pscustomobject]@{
         Name='986 Laptop'
-        Description='Conservative laptop selection; excludes optional gaming capture and startup-delay tuning.'
+        Description='Conservative laptop preferences; avoids forced policies and persistent enforcement.'
         TweakIds=@(
-            'show-ext','open-thispc','disable-adid','disable-tailored','disable-feedback',
-            'disable-tips','disable-silentapps','disable-pane-suggestions','disable-subscribed',
-            'disable-activity-feed','disable-publish-activity','disable-upload-activity',
-            'disable-consumer','taskbar-end-task'
+            'show-ext','open-thispc','disable-adid','disable-tailored','disable-feedback','disable-tips',
+            'disable-silentapps','disable-pane-suggestions','disable-subscribed','taskbar-end-task',
+            'hide-task-view','hide-widgets','hide-taskbar-search','disable-start-recommendations',
+            'disable-transparency'
         )
     },
     [pscustomobject]@{
         Name='986 Technician'
-        Description='Visibility and troubleshooting convenience for technician workflows.'
+        Description='Windows visibility and troubleshooting preferences; tools remain secondary.'
         TweakIds=@(
-            'show-ext','show-hidden','open-thispc','hide-recent','hide-frequent',
-            'disable-tips','disable-silentapps','disable-pane-suggestions','disable-subscribed',
-            'startup-delay','taskbar-end-task'
+            'show-ext','show-hidden','open-thispc','hide-recent','hide-frequent','disable-tips',
+            'disable-silentapps','disable-pane-suggestions','disable-subscribed','startup-delay',
+            'taskbar-end-task','hide-task-view','hide-widgets','hide-taskbar-search','show-clock-seconds',
+            'start-more-pins','disable-start-recommendations'
         )
     }
 )

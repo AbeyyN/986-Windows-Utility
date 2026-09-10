@@ -30,6 +30,15 @@ jobs:
       - name: Validate Profiles safety model
         shell: powershell
         run: .\tests\Profile.Tests.ps1
+      - name: Enforce Never-Lock tweak baseline
+        shell: powershell
+        run: .\tests\NoLock.Tests.ps1
+      - name: Prove manual preference override persists
+        shell: powershell
+        run: .\tests\PreferenceOverride.Tests.ps1
+      - name: Validate single-tweak selection
+        shell: powershell
+        run: .\tests\SingleSelection.Tests.ps1
       - name: WPF profile UI smoke test
         shell: powershell
         run: .\tests\Gui.Tests.ps1

@@ -32,6 +32,15 @@
 - user-defined local profiles
 - profile actions remain selection-only; Apply/Undo stays explicit and reversible
 
+## v0.5 — Windows Settings Expansion (in development)
+
+- keep 986 tweak-first; diagnostics/tooling remain secondary
+- active tweaks use normal user-editable preference keys, not locking Policy paths
+- migrate four v0.1-v0.4 Policy tweaks to legacy Undo-only compatibility
+- add Taskbar, Start, Gaming and Personalization preference tweaks
+- add CI proof that manual user overrides persist after 986 Apply
+- expand compatibility/side-effect evidence before each new tweak ships
+
 ## v1.0 — Stable
 
 - documented compatibility matrix
