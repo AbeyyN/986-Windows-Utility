@@ -3,7 +3,7 @@ param([switch]$NoElevation,[switch]$AuditOnly,[switch]$AuditJson,[switch]$Doctor
 Set-StrictMode -Version 3.0
 $ErrorActionPreference = 'Stop'
 $AppName = '986 Windows Utility'
-$Version = '0.4.0'
+$Version = '0.5.0'
 $Root = Split-Path -Parent $MyInvocation.MyCommand.Path
 $StateDir = Join-Path $Root 'state'
 $StateFile = Join-Path $StateDir 'original-state.json'
@@ -29,26 +29,40 @@ Add-Type -AssemblyName WindowsBase
 Add-Type -AssemblyName Microsoft.VisualBasic
 
 $Tweaks = @(
-    [pscustomobject]@{ Id='show-ext'; Category='Explorer'; Name='Show file extensions'; Path='HKCU:\Software\Microsoft\Windows\CurrentVersion\Explorer\Advanced'; Value='HideFileExt'; Type='DWord'; Target=0; Risk='LOW'; Balanced=$true }
-    [pscustomobject]@{ Id='show-hidden'; Category='Explorer'; Name='Show hidden files'; Path='HKCU:\Software\Microsoft\Windows\CurrentVersion\Explorer\Advanced'; Value='Hidden'; Type='DWord'; Target=1; Risk='LOW'; Balanced=$false }
-    [pscustomobject]@{ Id='open-thispc'; Category='Explorer'; Name='Open File Explorer to This PC'; Path='HKCU:\Software\Microsoft\Windows\CurrentVersion\Explorer\Advanced'; Value='LaunchTo'; Type='DWord'; Target=1; Risk='LOW'; Balanced=$true }
-    [pscustomobject]@{ Id='hide-recent'; Category='Explorer'; Name='Hide recent files in Quick Access'; Path='HKCU:\Software\Microsoft\Windows\CurrentVersion\Explorer'; Value='ShowRecent'; Type='DWord'; Target=0; Risk='LOW'; Balanced=$false }
-    [pscustomobject]@{ Id='hide-frequent'; Category='Explorer'; Name='Hide frequent folders in Quick Access'; Path='HKCU:\Software\Microsoft\Windows\CurrentVersion\Explorer'; Value='ShowFrequent'; Type='DWord'; Target=0; Risk='LOW'; Balanced=$false }
-    [pscustomobject]@{ Id='disable-adid'; Category='Privacy'; Name='Disable advertising ID'; Path='HKCU:\Software\Microsoft\Windows\CurrentVersion\AdvertisingInfo'; Value='Enabled'; Type='DWord'; Target=0; Risk='LOW'; Balanced=$true }
-    [pscustomobject]@{ Id='disable-tailored'; Category='Privacy'; Name='Disable tailored experiences'; Path='HKCU:\Software\Microsoft\Windows\CurrentVersion\Privacy'; Value='TailoredExperiencesWithDiagnosticDataEnabled'; Type='DWord'; Target=0; Risk='LOW'; Balanced=$true }
-    [pscustomobject]@{ Id='disable-feedback'; Category='Privacy'; Name='Disable Windows feedback prompts'; Path='HKCU:\Software\Microsoft\Siuf\Rules'; Value='NumberOfSIUFInPeriod'; Type='DWord'; Target=0; Risk='LOW'; Balanced=$true }
-    [pscustomobject]@{ Id='disable-tips'; Category='Privacy'; Name='Disable Windows tips and suggestions'; Path='HKCU:\Software\Microsoft\Windows\CurrentVersion\ContentDeliveryManager'; Value='SoftLandingEnabled'; Type='DWord'; Target=0; Risk='LOW'; Balanced=$true }
-    [pscustomobject]@{ Id='disable-silentapps'; Category='Privacy'; Name='Disable silent suggested-app installs'; Path='HKCU:\Software\Microsoft\Windows\CurrentVersion\ContentDeliveryManager'; Value='SilentInstalledAppsEnabled'; Type='DWord'; Target=0; Risk='LOW'; Balanced=$true }
-    [pscustomobject]@{ Id='disable-pane-suggestions'; Category='Privacy'; Name='Disable Start/System pane suggestions'; Path='HKCU:\Software\Microsoft\Windows\CurrentVersion\ContentDeliveryManager'; Value='SystemPaneSuggestionsEnabled'; Type='DWord'; Target=0; Risk='LOW'; Balanced=$true }
-    [pscustomobject]@{ Id='disable-subscribed'; Category='Privacy'; Name='Disable subscribed suggestion content'; Path='HKCU:\Software\Microsoft\Windows\CurrentVersion\ContentDeliveryManager'; Value='SubscribedContent-338389Enabled'; Type='DWord'; Target=0; Risk='LOW'; Balanced=$true }
-    [pscustomobject]@{ Id='disable-lock-spotlight'; Category='Privacy'; Name='Disable rotating lock-screen Spotlight'; Path='HKCU:\Software\Microsoft\Windows\CurrentVersion\ContentDeliveryManager'; Value='RotatingLockScreenEnabled'; Type='DWord'; Target=0; Risk='LOW'; Balanced=$false }
-    [pscustomobject]@{ Id='startup-delay'; Category='Performance'; Name='Disable Explorer startup delay'; Path='HKCU:\Software\Microsoft\Windows\CurrentVersion\Explorer\Serialize'; Value='StartupDelayInMSec'; Type='DWord'; Target=0; Risk='LOW'; Balanced=$true }
-    [pscustomobject]@{ Id='disable-activity-feed'; Category='Privacy'; Name='Disable Windows Activity Feed'; Path='HKLM:\SOFTWARE\Policies\Microsoft\Windows\System'; Value='EnableActivityFeed'; Type='DWord'; Target=0; Risk='LOW'; Balanced=$true }
-    [pscustomobject]@{ Id='disable-publish-activity'; Category='Privacy'; Name='Disable publishing user activities'; Path='HKLM:\SOFTWARE\Policies\Microsoft\Windows\System'; Value='PublishUserActivities'; Type='DWord'; Target=0; Risk='LOW'; Balanced=$true }
-    [pscustomobject]@{ Id='disable-upload-activity'; Category='Privacy'; Name='Disable uploading user activities'; Path='HKLM:\SOFTWARE\Policies\Microsoft\Windows\System'; Value='UploadUserActivities'; Type='DWord'; Target=0; Risk='LOW'; Balanced=$true }
-    [pscustomobject]@{ Id='disable-consumer'; Category='Privacy'; Name='Disable Microsoft consumer experiences'; Path='HKLM:\SOFTWARE\Policies\Microsoft\Windows\CloudContent'; Value='DisableWindowsConsumerFeatures'; Type='DWord'; Target=1; Risk='LOW'; Balanced=$true }
-    [pscustomobject]@{ Id='disable-game-capture'; Category='Performance'; Name='Disable Xbox/Game DVR capture'; Path='HKCU:\Software\Microsoft\Windows\CurrentVersion\GameDVR'; Value='AppCaptureEnabled'; Type='DWord'; Target=0; Risk='LOW'; Balanced=$false }
-    [pscustomobject]@{ Id='taskbar-end-task'; Category='Taskbar'; Name='Enable taskbar End task'; Path='HKCU:\Software\Microsoft\Windows\CurrentVersion\Explorer\Advanced\TaskbarDeveloperSettings'; Value='TaskbarEndTask'; Type='DWord'; Target=1; Risk='LOW'; Balanced=$true }
+    [pscustomobject]@{ Id='show-ext'; Category='Explorer'; Name='Show file extensions'; Path='HKCU:\Software\Microsoft\Windows\CurrentVersion\Explorer\Advanced'; Value='HideFileExt'; Type='DWord'; Target=0; Risk='LOW'; Balanced=$true; UserEditable=$true; Enforcement='None'; ApplyAllowed=$true; LegacyPolicy=$false }
+    [pscustomobject]@{ Id='show-hidden'; Category='Explorer'; Name='Show hidden files'; Path='HKCU:\Software\Microsoft\Windows\CurrentVersion\Explorer\Advanced'; Value='Hidden'; Type='DWord'; Target=1; Risk='LOW'; Balanced=$false; UserEditable=$true; Enforcement='None'; ApplyAllowed=$true; LegacyPolicy=$false }
+    [pscustomobject]@{ Id='open-thispc'; Category='Explorer'; Name='Open File Explorer to This PC'; Path='HKCU:\Software\Microsoft\Windows\CurrentVersion\Explorer\Advanced'; Value='LaunchTo'; Type='DWord'; Target=1; Risk='LOW'; Balanced=$true; UserEditable=$true; Enforcement='None'; ApplyAllowed=$true; LegacyPolicy=$false }
+    [pscustomobject]@{ Id='hide-recent'; Category='Explorer'; Name='Hide recent files in Quick Access'; Path='HKCU:\Software\Microsoft\Windows\CurrentVersion\Explorer'; Value='ShowRecent'; Type='DWord'; Target=0; Risk='LOW'; Balanced=$false; UserEditable=$true; Enforcement='None'; ApplyAllowed=$true; LegacyPolicy=$false }
+    [pscustomobject]@{ Id='hide-frequent'; Category='Explorer'; Name='Hide frequent folders in Quick Access'; Path='HKCU:\Software\Microsoft\Windows\CurrentVersion\Explorer'; Value='ShowFrequent'; Type='DWord'; Target=0; Risk='LOW'; Balanced=$false; UserEditable=$true; Enforcement='None'; ApplyAllowed=$true; LegacyPolicy=$false }
+    [pscustomobject]@{ Id='disable-adid'; Category='Privacy'; Name='Disable advertising ID'; Path='HKCU:\Software\Microsoft\Windows\CurrentVersion\AdvertisingInfo'; Value='Enabled'; Type='DWord'; Target=0; Risk='LOW'; Balanced=$true; UserEditable=$true; Enforcement='None'; ApplyAllowed=$true; LegacyPolicy=$false }
+    [pscustomobject]@{ Id='disable-tailored'; Category='Privacy'; Name='Disable tailored experiences'; Path='HKCU:\Software\Microsoft\Windows\CurrentVersion\Privacy'; Value='TailoredExperiencesWithDiagnosticDataEnabled'; Type='DWord'; Target=0; Risk='LOW'; Balanced=$true; UserEditable=$true; Enforcement='None'; ApplyAllowed=$true; LegacyPolicy=$false }
+    [pscustomobject]@{ Id='disable-feedback'; Category='Privacy'; Name='Disable Windows feedback prompts'; Path='HKCU:\Software\Microsoft\Siuf\Rules'; Value='NumberOfSIUFInPeriod'; Type='DWord'; Target=0; Risk='LOW'; Balanced=$true; UserEditable=$true; Enforcement='None'; ApplyAllowed=$true; LegacyPolicy=$false }
+
+    [pscustomobject]@{ Id='disable-tips'; Category='Privacy'; Name='Disable Windows tips and suggestions'; Path='HKCU:\Software\Microsoft\Windows\CurrentVersion\ContentDeliveryManager'; Value='SoftLandingEnabled'; Type='DWord'; Target=0; Risk='LOW'; Balanced=$true; UserEditable=$true; Enforcement='None'; ApplyAllowed=$true; LegacyPolicy=$false }
+    [pscustomobject]@{ Id='disable-silentapps'; Category='Privacy'; Name='Disable silent suggested-app installs'; Path='HKCU:\Software\Microsoft\Windows\CurrentVersion\ContentDeliveryManager'; Value='SilentInstalledAppsEnabled'; Type='DWord'; Target=0; Risk='LOW'; Balanced=$true; UserEditable=$true; Enforcement='None'; ApplyAllowed=$true; LegacyPolicy=$false }
+    [pscustomobject]@{ Id='disable-pane-suggestions'; Category='Privacy'; Name='Disable Start/System pane suggestions'; Path='HKCU:\Software\Microsoft\Windows\CurrentVersion\ContentDeliveryManager'; Value='SystemPaneSuggestionsEnabled'; Type='DWord'; Target=0; Risk='LOW'; Balanced=$true; UserEditable=$true; Enforcement='None'; ApplyAllowed=$true; LegacyPolicy=$false }
+    [pscustomobject]@{ Id='disable-subscribed'; Category='Privacy'; Name='Disable subscribed suggestion content'; Path='HKCU:\Software\Microsoft\Windows\CurrentVersion\ContentDeliveryManager'; Value='SubscribedContent-338389Enabled'; Type='DWord'; Target=0; Risk='LOW'; Balanced=$true; UserEditable=$true; Enforcement='None'; ApplyAllowed=$true; LegacyPolicy=$false }
+    [pscustomobject]@{ Id='disable-lock-spotlight'; Category='Privacy'; Name='Disable rotating lock-screen Spotlight'; Path='HKCU:\Software\Microsoft\Windows\CurrentVersion\ContentDeliveryManager'; Value='RotatingLockScreenEnabled'; Type='DWord'; Target=0; Risk='LOW'; Balanced=$false; UserEditable=$true; Enforcement='None'; ApplyAllowed=$true; LegacyPolicy=$false }
+    [pscustomobject]@{ Id='startup-delay'; Category='Performance'; Name='Disable Explorer startup delay'; Path='HKCU:\Software\Microsoft\Windows\CurrentVersion\Explorer\Serialize'; Value='StartupDelayInMSec'; Type='DWord'; Target=0; Risk='LOW'; Balanced=$true; UserEditable=$true; Enforcement='None'; ApplyAllowed=$true; LegacyPolicy=$false }
+    [pscustomobject]@{ Id='disable-game-capture'; Category='Gaming'; Name='Disable Xbox/Game DVR capture'; Path='HKCU:\Software\Microsoft\Windows\CurrentVersion\GameDVR'; Value='AppCaptureEnabled'; Type='DWord'; Target=0; Risk='LOW'; Balanced=$false; UserEditable=$true; Enforcement='None'; ApplyAllowed=$true; LegacyPolicy=$false }
+    [pscustomobject]@{ Id='taskbar-end-task'; Category='Taskbar'; Name='Enable taskbar End task'; Path='HKCU:\Software\Microsoft\Windows\CurrentVersion\Explorer\Advanced\TaskbarDeveloperSettings'; Value='TaskbarEndTask'; Type='DWord'; Target=1; Risk='LOW'; Balanced=$true; UserEditable=$true; Enforcement='None'; ApplyAllowed=$true; LegacyPolicy=$false }
+    [pscustomobject]@{ Id='hide-task-view'; Category='Taskbar'; Name='Hide Task View button'; Path='HKCU:\Software\Microsoft\Windows\CurrentVersion\Explorer\Advanced'; Value='ShowTaskViewButton'; Type='DWord'; Target=0; Risk='LOW'; Balanced=$true; UserEditable=$true; Enforcement='None'; ApplyAllowed=$true; LegacyPolicy=$false }
+    [pscustomobject]@{ Id='hide-taskbar-search'; Category='Taskbar'; Name='Hide taskbar Search'; Path='HKCU:\Software\Microsoft\Windows\CurrentVersion\Search'; Value='SearchboxTaskbarMode'; Type='DWord'; Target=0; Risk='LOW'; Balanced=$true; UserEditable=$true; Enforcement='None'; ApplyAllowed=$true; LegacyPolicy=$false }
+    [pscustomobject]@{ Id='show-clock-seconds'; Category='Taskbar'; Name='Show seconds in system tray clock'; Path='HKCU:\Software\Microsoft\Windows\CurrentVersion\Explorer\Advanced'; Value='ShowSecondsInSystemClock'; Type='DWord'; Target=1; Risk='LOW'; Balanced=$false; UserEditable=$true; Enforcement='None'; ApplyAllowed=$true; LegacyPolicy=$false }
+
+    [pscustomobject]@{ Id='start-more-pins'; Category='Start'; Name='Use more pins in Start'; Path='HKCU:\Software\Microsoft\Windows\CurrentVersion\Explorer\Advanced'; Value='Start_Layout'; Type='DWord'; Target=1; Risk='LOW'; Balanced=$false; UserEditable=$true; Enforcement='None'; ApplyAllowed=$true; LegacyPolicy=$false }
+    [pscustomobject]@{ Id='disable-start-recommendations'; Category='Start'; Name='Disable Start recommendations'; Path='HKCU:\Software\Microsoft\Windows\CurrentVersion\Explorer\Advanced'; Value='Start_IrisRecommendations'; Type='DWord'; Target=0; Risk='LOW'; Balanced=$true; UserEditable=$true; Enforcement='None'; ApplyAllowed=$true; LegacyPolicy=$false }
+    [pscustomobject]@{ Id='enable-game-mode'; Category='Gaming'; Name='Enable Game Mode'; Path='HKCU:\Software\Microsoft\GameBar'; Value='AutoGameModeEnabled'; Type='DWord'; Target=1; Risk='LOW'; Balanced=$false; UserEditable=$true; Enforcement='None'; ApplyAllowed=$true; LegacyPolicy=$false }
+    [pscustomobject]@{ Id='disable-transparency'; Category='Personalization'; Name='Disable transparency effects'; Path='HKCU:\Software\Microsoft\Windows\CurrentVersion\Themes\Personalize'; Value='EnableTransparency'; Type='DWord'; Target=0; Risk='LOW'; Balanced=$false; UserEditable=$true; Enforcement='None'; ApplyAllowed=$true; LegacyPolicy=$false }
+    [pscustomobject]@{ Id='dark-apps'; Category='Personalization'; Name='Use dark mode for apps'; Path='HKCU:\Software\Microsoft\Windows\CurrentVersion\Themes\Personalize'; Value='AppsUseLightTheme'; Type='DWord'; Target=0; Risk='LOW'; Balanced=$false; UserEditable=$true; Enforcement='None'; ApplyAllowed=$true; LegacyPolicy=$false }
+    [pscustomobject]@{ Id='dark-system'; Category='Personalization'; Name='Use dark mode for Windows'; Path='HKCU:\Software\Microsoft\Windows\CurrentVersion\Themes\Personalize'; Value='SystemUsesLightTheme'; Type='DWord'; Target=0; Risk='LOW'; Balanced=$false; UserEditable=$true; Enforcement='None'; ApplyAllowed=$true; LegacyPolicy=$false }
+)
+
+$LegacyTweaks = @(
+    [pscustomobject]@{ Id='disable-activity-feed'; Category='Legacy'; Name='Legacy policy: Disable Windows Activity Feed (undo only)'; Path='HKLM:\SOFTWARE\Policies\Microsoft\Windows\System'; Value='EnableActivityFeed'; Type='DWord'; Target=0; Risk='LEGACY'; Balanced=$false; UserEditable=$false; Enforcement='LegacyPolicy'; ApplyAllowed=$false; LegacyPolicy=$true }
+    [pscustomobject]@{ Id='disable-publish-activity'; Category='Legacy'; Name='Legacy policy: Disable publishing user activities (undo only)'; Path='HKLM:\SOFTWARE\Policies\Microsoft\Windows\System'; Value='PublishUserActivities'; Type='DWord'; Target=0; Risk='LEGACY'; Balanced=$false; UserEditable=$false; Enforcement='LegacyPolicy'; ApplyAllowed=$false; LegacyPolicy=$true }
+    [pscustomobject]@{ Id='disable-upload-activity'; Category='Legacy'; Name='Legacy policy: Disable uploading user activities (undo only)'; Path='HKLM:\SOFTWARE\Policies\Microsoft\Windows\System'; Value='UploadUserActivities'; Type='DWord'; Target=0; Risk='LEGACY'; Balanced=$false; UserEditable=$false; Enforcement='LegacyPolicy'; ApplyAllowed=$false; LegacyPolicy=$true }
+    [pscustomobject]@{ Id='disable-consumer'; Category='Legacy'; Name='Legacy policy: Disable Microsoft consumer experiences (undo only)'; Path='HKLM:\SOFTWARE\Policies\Microsoft\Windows\CloudContent'; Value='DisableWindowsConsumerFeatures'; Type='DWord'; Target=1; Risk='LEGACY'; Balanced=$false; UserEditable=$false; Enforcement='LegacyPolicy'; ApplyAllowed=$false; LegacyPolicy=$true }
 )
 
 function Write-AppLog([string]$Message) {
@@ -115,9 +129,13 @@ function Capture-OriginalState($Tweak, [hashtable]$State) {
 }
 
 function Apply-Tweak($Tweak, [hashtable]$State) {
+    if (-not [bool]$Tweak.ApplyAllowed) {
+        Write-AppLog "APPLY BLOCKED $($Tweak.Id): legacy/policy tweak is undo-only"
+        return $false
+    }
     try {
         Capture-OriginalState $Tweak $State
-        New-Item -Path $Tweak.Path -Force | Out-Null
+        if (-not (Test-Path $Tweak.Path)) { New-Item -Path $Tweak.Path -Force | Out-Null }
         New-ItemProperty -Path $Tweak.Path -Name $Tweak.Value -PropertyType $Tweak.Type -Value $Tweak.Target -Force | Out-Null
         if (-not (Test-TweakActive $Tweak)) { throw 'verification failed after apply' }
         Write-AppLog "APPLY PASS  $($Tweak.Id)"
@@ -136,7 +154,7 @@ function Undo-Tweak($Tweak, [hashtable]$State) {
     try {
         $original = $State[$Tweak.Id]
         if ([bool]$original.Exists) {
-            New-Item -Path $Tweak.Path -Force | Out-Null
+            if (-not (Test-Path $Tweak.Path)) { New-Item -Path $Tweak.Path -Force | Out-Null }
             New-ItemProperty -Path $Tweak.Path -Name $Tweak.Value -PropertyType $original.Kind -Value $original.Value -Force | Out-Null
         } elseif (Test-Path $Tweak.Path) {
             Remove-ItemProperty -Path $Tweak.Path -Name $Tweak.Value -ErrorAction SilentlyContinue
@@ -254,7 +272,7 @@ if ($DoctorOnly) {
     </Border>
     <Grid Grid.Row="4">
       <Grid.ColumnDefinitions><ColumnDefinition Width="*"/><ColumnDefinition Width="Auto"/></Grid.ColumnDefinitions>
-      <TextBlock Text="No tweak is changed until Apply is pressed. Undo requires an original snapshot." Foreground="#9CA3AF" VerticalAlignment="Center"/>
+      <TextBlock Text="Preferences are applied once only. 986 never locks or auto-reapplies them. Undo requires an original snapshot." Foreground="#9CA3AF" VerticalAlignment="Center"/>
       <StackPanel Grid.Column="1" Orientation="Horizontal">
         <Button x:Name="BtnUndo" Content="Undo Selected" Background="#3F1D2E"/>
         <Button x:Name="BtnApply" Content="Apply Selected" Background="#92400E"/>
@@ -284,6 +302,11 @@ $BtnOpenState = $Window.FindName('BtnOpenState')
 $BtnUndo = $Window.FindName('BtnUndo')
 $BtnApply = $Window.FindName('BtnApply')
 $script:Rows = @{}
+$script:DisplayedTweaks = @($Tweaks)
+$startupState = Load-SnapshotState
+foreach ($legacy in $LegacyTweaks) {
+    if ($startupState.ContainsKey($legacy.Id)) { $script:DisplayedTweaks += $legacy }
+}
 
 function New-TweakRow($Tweak) {
     $border = New-Object Windows.Controls.Border
@@ -306,12 +329,17 @@ function New-TweakRow($Tweak) {
     $script:Rows[$Tweak.Id] = [pscustomobject]@{ Tweak=$Tweak; Check=$check; Status=$status }
 }
 
-foreach ($t in $Tweaks) { New-TweakRow $t }
+foreach ($t in $script:DisplayedTweaks) { New-TweakRow $t }
 
 function Refresh-TweakStatus {
     $state = Load-SnapshotState
-    foreach ($t in $Tweaks) {
+    foreach ($t in $script:DisplayedTweaks) {
         $row = $script:Rows[$t.Id]
+        if ([bool]$t.LegacyPolicy) {
+            $row.Status.Text = 'LEGACY | UNDO'
+            $row.Status.Foreground = '#FCA5A5'
+            continue
+        }
         if (Test-TweakActive $t) {
             $row.Status.Text = if ($state.ContainsKey($t.Id)) { 'ACTIVE | UNDO' } else { 'ACTIVE' }
             $row.Status.Foreground = '#FBBF24'
@@ -323,13 +351,13 @@ function Refresh-TweakStatus {
 }
 
 function Get-SelectedTweaks {
-    return @($Tweaks | Where-Object { $script:Rows[$_.Id].Check.IsChecked -eq $true })
+    return @($script:DisplayedTweaks | Where-Object { $script:Rows[$_.Id].Check.IsChecked -eq $true })
 }
 
 function Set-Selection([string]$Mode) {
-    foreach ($t in $Tweaks) {
+    foreach ($t in $script:DisplayedTweaks) {
         switch ($Mode) {
-            'All'   { $script:Rows[$t.Id].Check.IsChecked = $true }
+            'All'   { $script:Rows[$t.Id].Check.IsChecked = [bool]$t.ApplyAllowed }
             'Clear' { $script:Rows[$t.Id].Check.IsChecked = $false }
         }
     }
@@ -370,7 +398,7 @@ $BtnProfileSelect.Add_Click({
     catch { [Windows.MessageBox]::Show($_.Exception.Message,'986 Profiles') | Out-Null }
 })
 $BtnProfileSave.Add_Click({
-    $selected = Get-SelectedTweaks
+    $selected = @(Get-SelectedTweaks)
     if ($selected.Count -eq 0) { [Windows.MessageBox]::Show('Select at least one tweak before saving a custom profile.','986 Profiles') | Out-Null; return }
     $name = [Microsoft.VisualBasic.Interaction]::InputBox('Name this custom profile:','986 Profiles','My Profile')
     if ([string]::IsNullOrWhiteSpace($name)) { return }
@@ -394,7 +422,7 @@ $BtnRestorePoint.Add_Click({ [void](New-RestorePoint) })
 $BtnOpenState.Add_Click({ Start-Process explorer.exe -ArgumentList "`"$StateDir`"" })
 
 $BtnApply.Add_Click({
-    $selected = Get-SelectedTweaks
+    $selected = @(Get-SelectedTweaks)
     if ($selected.Count -eq 0) { Write-AppLog 'APPLY skipped: nothing selected'; return }
     $state = Load-SnapshotState
     $pass = 0
@@ -404,7 +432,7 @@ $BtnApply.Add_Click({
 })
 
 $BtnUndo.Add_Click({
-    $selected = Get-SelectedTweaks
+    $selected = @(Get-SelectedTweaks)
     if ($selected.Count -eq 0) { Write-AppLog 'UNDO skipped: nothing selected'; return }
     $state = Load-SnapshotState
     $pass = 0
@@ -417,5 +445,5 @@ Refresh-TweakStatus
 Refresh-ProfilePicker '986 Balanced'
 Select-986Profile '986 Balanced'
 Write-AppLog "$AppName v$Version started | Admin=$(Test-IsAdministrator) | Host=$env:COMPUTERNAME"
-Write-AppLog "Baseline loaded. No changes are made until Apply Selected is pressed."
+Write-AppLog "Baseline loaded. Preferences remain user-editable; 986 does not auto-reapply after Apply Selected."
 [void]$Window.ShowDialog()

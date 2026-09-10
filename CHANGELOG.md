@@ -2,6 +2,23 @@
 
 All notable project changes are documented here.
 
+## [0.5.0] - 2026-09-10
+
+### Added
+
+- 9 user-editable Windows preference tweaks across Taskbar, Start, Gaming and Personalization
+- Never-Lock User metadata and CI contract for all active tweaks
+- real manual-override persistence test and single-selection regression test
+
+### Changed
+
+- four legacy Group Policy tweaks from v0.1-v0.4 are now undo-only and cannot be applied again
+- built-in profiles now contain only ordinary user preferences; no active Policy enforcement
+
+### Fixed
+
+- selecting exactly one tweak no longer crashes Save Custom, Apply Selected or Undo Selected on Windows PowerShell 5.1
+
 ## [0.4.0] - 2026-09-10
 
 ### Added
