@@ -1,6 +1,7 @@
 $ErrorActionPreference = 'Stop'
 $root = Split-Path -Parent (Split-Path -Parent $MyInvocation.MyCommand.Path)
 $app = Join-Path $root '986-Windows-Utility.ps1'
+$appText = Get-Content $app -Raw -Encoding UTF8
 $tokens=$null; $errors=$null
 $ast = [System.Management.Automation.Language.Parser]::ParseFile($app,[ref]$tokens,[ref]$errors)
 if ($errors.Count) { throw 'Main app has parse errors.' }
@@ -10,6 +11,8 @@ foreach ($name in $needed) {
     if (-not $fn) { throw "Missing engine function: $name" }
     Invoke-Expression $fn.Extent.Text
 }
+$guard = 'if (-not (Test-Path $Tweak.Path)) { New-Item -Path $Tweak.Path -Force | Out-Null }'
+if (([regex]::Matches($appText,[regex]::Escape($guard))).Count -ne 2) { throw 'Apply/Undo must only create a Registry path when it is missing.' }
 
 $testId = [guid]::NewGuid().ToString('N')
 $StateDir = Join-Path ([IO.Path]::GetTempPath()) ('986-pref-' + $testId)
@@ -34,7 +37,7 @@ try {
 
     if (-not (Undo-Tweak $tweak $state)) { throw 'Undo failed after user override.' }
     if ((Get-RegistryState $tweak).Exists) { throw 'Undo did not restore original absent state.' }
-    Write-Host 'PASS: Apply is one-shot, manual user override persists, legacy apply is blocked, Undo restores exact original.' -ForegroundColor Green
+    Write-Host 'PASS: Apply is one-shot, manual override persists, existing paths are not recreated, legacy apply is blocked, Undo restores exact original.' -ForegroundColor Green
 } finally {
     Remove-Item -Path $key -Recurse -Force -ErrorAction SilentlyContinue
     Remove-Item -Path $StateDir -Recurse -Force -ErrorAction SilentlyContinue

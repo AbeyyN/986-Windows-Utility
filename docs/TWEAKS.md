@@ -1,6 +1,6 @@
 # Shipped Tweaks
 
-v0.5 development catalog: **26 active preference tweaks** plus **4 legacy policy entries that are Undo-only**.
+v0.5 development catalog: **25 active preference tweaks** plus **4 legacy policy entries that are Undo-only**.
 
 All active tweaks are one-shot Windows preferences: `UserEditable=true`, `Enforcement=None`. 986 does not keep re-applying a target after the user changes it manually.
 
@@ -23,7 +23,6 @@ All active tweaks are one-shot Windows preferences: `UserEditable=true`, `Enforc
 | disable-game-capture | Gaming | Disable Xbox/Game DVR capture | no |
 | taskbar-end-task | Taskbar | Enable taskbar End task | yes |
 | hide-task-view | Taskbar | Hide Task View button | yes |
-| hide-widgets | Taskbar | Hide Widgets button | yes |
 | hide-taskbar-search | Taskbar | Hide taskbar Search | yes || show-clock-seconds | Taskbar | Show seconds in system tray clock | no |
 | start-more-pins | Start | Use more pins in Start | no |
 | disable-start-recommendations | Start | Disable Start recommendations | yes |

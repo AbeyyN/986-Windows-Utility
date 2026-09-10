@@ -6,7 +6,7 @@ All notable project changes are documented here.
 
 ### Added
 
-- 10 user-editable Windows preference tweaks across Taskbar, Start, Gaming and Personalization
+- 9 user-editable Windows preference tweaks across Taskbar, Start, Gaming and Personalization
 - Never-Lock User metadata and CI contract for all active tweaks
 - real manual-override persistence test and single-selection regression test
 

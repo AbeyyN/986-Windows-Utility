@@ -8,7 +8,7 @@ $script:BuiltIn986Profiles = @(
         TweakIds=@(
             'show-ext','open-thispc','disable-adid','disable-tailored','disable-feedback',
             'disable-tips','disable-silentapps','disable-pane-suggestions','disable-subscribed',
-            'startup-delay','taskbar-end-task','hide-task-view','hide-widgets','hide-taskbar-search',
+            'startup-delay','taskbar-end-task','hide-task-view','hide-taskbar-search',
             'disable-start-recommendations'
         )
     },
@@ -18,7 +18,7 @@ $script:BuiltIn986Profiles = @(
         TweakIds=@(
             'show-ext','open-thispc','disable-adid','disable-tailored','disable-feedback','disable-tips',
             'disable-silentapps','disable-pane-suggestions','disable-subscribed','startup-delay',
-            'taskbar-end-task','hide-task-view','hide-widgets','hide-taskbar-search',
+            'taskbar-end-task','hide-task-view','hide-taskbar-search',
             'disable-start-recommendations','disable-game-capture','enable-game-mode','disable-transparency'
         )
     },
@@ -29,7 +29,7 @@ $script:BuiltIn986Profiles = @(
         TweakIds=@(
             'show-ext','open-thispc','disable-adid','disable-tailored','disable-feedback','disable-tips',
             'disable-silentapps','disable-pane-suggestions','disable-subscribed','taskbar-end-task',
-            'hide-task-view','hide-widgets','hide-taskbar-search','disable-start-recommendations',
+            'hide-task-view','hide-taskbar-search','disable-start-recommendations',
             'disable-transparency'
         )
     },
@@ -39,7 +39,7 @@ $script:BuiltIn986Profiles = @(
         TweakIds=@(
             'show-ext','show-hidden','open-thispc','hide-recent','hide-frequent','disable-tips',
             'disable-silentapps','disable-pane-suggestions','disable-subscribed','startup-delay',
-            'taskbar-end-task','hide-task-view','hide-widgets','hide-taskbar-search','show-clock-seconds',
+            'taskbar-end-task','hide-task-view','hide-taskbar-search','show-clock-seconds',
             'start-more-pins','disable-start-recommendations'
         )
     }

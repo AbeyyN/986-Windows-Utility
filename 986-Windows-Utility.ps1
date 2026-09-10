@@ -47,7 +47,6 @@ $Tweaks = @(
     [pscustomobject]@{ Id='disable-game-capture'; Category='Gaming'; Name='Disable Xbox/Game DVR capture'; Path='HKCU:\Software\Microsoft\Windows\CurrentVersion\GameDVR'; Value='AppCaptureEnabled'; Type='DWord'; Target=0; Risk='LOW'; Balanced=$false; UserEditable=$true; Enforcement='None'; ApplyAllowed=$true; LegacyPolicy=$false }
     [pscustomobject]@{ Id='taskbar-end-task'; Category='Taskbar'; Name='Enable taskbar End task'; Path='HKCU:\Software\Microsoft\Windows\CurrentVersion\Explorer\Advanced\TaskbarDeveloperSettings'; Value='TaskbarEndTask'; Type='DWord'; Target=1; Risk='LOW'; Balanced=$true; UserEditable=$true; Enforcement='None'; ApplyAllowed=$true; LegacyPolicy=$false }
     [pscustomobject]@{ Id='hide-task-view'; Category='Taskbar'; Name='Hide Task View button'; Path='HKCU:\Software\Microsoft\Windows\CurrentVersion\Explorer\Advanced'; Value='ShowTaskViewButton'; Type='DWord'; Target=0; Risk='LOW'; Balanced=$true; UserEditable=$true; Enforcement='None'; ApplyAllowed=$true; LegacyPolicy=$false }
-    [pscustomobject]@{ Id='hide-widgets'; Category='Taskbar'; Name='Hide Widgets button'; Path='HKCU:\Software\Microsoft\Windows\CurrentVersion\Explorer\Advanced'; Value='TaskbarDa'; Type='DWord'; Target=0; Risk='LOW'; Balanced=$true; UserEditable=$true; Enforcement='None'; ApplyAllowed=$true; LegacyPolicy=$false }
     [pscustomobject]@{ Id='hide-taskbar-search'; Category='Taskbar'; Name='Hide taskbar Search'; Path='HKCU:\Software\Microsoft\Windows\CurrentVersion\Search'; Value='SearchboxTaskbarMode'; Type='DWord'; Target=0; Risk='LOW'; Balanced=$true; UserEditable=$true; Enforcement='None'; ApplyAllowed=$true; LegacyPolicy=$false }
     [pscustomobject]@{ Id='show-clock-seconds'; Category='Taskbar'; Name='Show seconds in system tray clock'; Path='HKCU:\Software\Microsoft\Windows\CurrentVersion\Explorer\Advanced'; Value='ShowSecondsInSystemClock'; Type='DWord'; Target=1; Risk='LOW'; Balanced=$false; UserEditable=$true; Enforcement='None'; ApplyAllowed=$true; LegacyPolicy=$false }
 
@@ -136,7 +135,7 @@ function Apply-Tweak($Tweak, [hashtable]$State) {
     }
     try {
         Capture-OriginalState $Tweak $State
-        New-Item -Path $Tweak.Path -Force | Out-Null
+        if (-not (Test-Path $Tweak.Path)) { New-Item -Path $Tweak.Path -Force | Out-Null }
         New-ItemProperty -Path $Tweak.Path -Name $Tweak.Value -PropertyType $Tweak.Type -Value $Tweak.Target -Force | Out-Null
         if (-not (Test-TweakActive $Tweak)) { throw 'verification failed after apply' }
         Write-AppLog "APPLY PASS  $($Tweak.Id)"
@@ -155,7 +154,7 @@ function Undo-Tweak($Tweak, [hashtable]$State) {
     try {
         $original = $State[$Tweak.Id]
         if ([bool]$original.Exists) {
-            New-Item -Path $Tweak.Path -Force | Out-Null
+            if (-not (Test-Path $Tweak.Path)) { New-Item -Path $Tweak.Path -Force | Out-Null }
             New-ItemProperty -Path $Tweak.Path -Name $Tweak.Value -PropertyType $original.Kind -Value $original.Value -Force | Out-Null
         } elseif (Test-Path $Tweak.Path) {
             Remove-ItemProperty -Path $Tweak.Path -Name $Tweak.Value -ErrorAction SilentlyContinue

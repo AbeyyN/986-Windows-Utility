@@ -25,7 +25,7 @@ This is the foundation of **986 State-Aware Reversible Tweaks**.
 ## v0.5.0-alpha.1 development features
 
 - Windows-native PowerShell 5.1 + WPF GUI
-- **26 active user-editable preference tweaks** across Explorer, Privacy, Performance, Gaming, Taskbar, Start and Personalization
+- **25 active user-editable preference tweaks** across Explorer, Privacy, Performance, Gaming, Taskbar, Start and Personalization
 - **4 legacy Policy tweaks are Undo-only** for pre-v0.5 snapshots and cannot be newly applied
 - **986 Profiles**: Balanced, Performance, Laptop and Technician built-ins
 - user-defined custom profiles stored locally in `state/profiles.json`
