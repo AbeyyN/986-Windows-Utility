@@ -1,6 +1,6 @@
 # Shipped Tweaks
 
-v0.5 development catalog: **25 active preference tweaks** plus **4 legacy policy entries that are Undo-only**.
+v0.5 catalog: **25 active preference tweaks** plus **4 legacy policy entries that are Undo-only**.
 
 All active tweaks are one-shot Windows preferences: `UserEditable=true`, `Enforcement=None`. 986 does not keep re-applying a target after the user changes it manually.
 

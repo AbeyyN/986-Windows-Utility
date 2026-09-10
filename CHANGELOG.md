@@ -2,7 +2,7 @@
 
 All notable project changes are documented here.
 
-## [Unreleased] - v0.5 settings expansion
+## [0.5.0] - 2026-09-10
 
 ### Added
 

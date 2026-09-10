@@ -32,7 +32,7 @@
 - user-defined local profiles
 - profile actions remain selection-only; Apply/Undo stays explicit and reversible
 
-## v0.5 — Windows Settings Expansion (in development)
+## v0.5 — Windows Settings Expansion (shipped)
 
 - keep 986 tweak-first; diagnostics/tooling remain secondary
 - active tweaks use normal user-editable preference keys, not locking Policy paths
