@@ -3,7 +3,7 @@ param([switch]$NoElevation,[switch]$AuditOnly,[switch]$AuditJson,[switch]$Doctor
 Set-StrictMode -Version 3.0
 $ErrorActionPreference = 'Stop'
 $AppName = '986 Windows Utility'
-$Version = '0.5.0'
+$Version = '0.6.0'
 $Root = Split-Path -Parent $MyInvocation.MyCommand.Path
 $StateDir = Join-Path $Root 'state'
 $StateFile = Join-Path $StateDir 'original-state.json'
@@ -56,6 +56,11 @@ $Tweaks = @(
     [pscustomobject]@{ Id='disable-transparency'; Category='Personalization'; Name='Disable transparency effects'; Path='HKCU:\Software\Microsoft\Windows\CurrentVersion\Themes\Personalize'; Value='EnableTransparency'; Type='DWord'; Target=0; Risk='LOW'; Balanced=$false; UserEditable=$true; Enforcement='None'; ApplyAllowed=$true; LegacyPolicy=$false }
     [pscustomobject]@{ Id='dark-apps'; Category='Personalization'; Name='Use dark mode for apps'; Path='HKCU:\Software\Microsoft\Windows\CurrentVersion\Themes\Personalize'; Value='AppsUseLightTheme'; Type='DWord'; Target=0; Risk='LOW'; Balanced=$false; UserEditable=$true; Enforcement='None'; ApplyAllowed=$true; LegacyPolicy=$false }
     [pscustomobject]@{ Id='dark-system'; Category='Personalization'; Name='Use dark mode for Windows'; Path='HKCU:\Software\Microsoft\Windows\CurrentVersion\Themes\Personalize'; Value='SystemUsesLightTheme'; Type='DWord'; Target=0; Risk='LOW'; Balanced=$false; UserEditable=$true; Enforcement='None'; ApplyAllowed=$true; LegacyPolicy=$false }
+    [pscustomobject]@{ Id='always-show-scrollbars'; Category='Accessibility'; Name='Always show scrollbars'; Path='HKCU:\Control Panel\Accessibility'; Value='DynamicScrollbars'; Type='DWord'; Target=0; Risk='LOW'; Balanced=$false; UserEditable=$true; Enforcement='None'; ApplyAllowed=$true; LegacyPolicy=$false }
+    [pscustomobject]@{ Id='show-battery-percentage'; Category='Taskbar'; Name='Show battery percentage'; Path='HKCU:\Software\Microsoft\Windows\CurrentVersion\Explorer\Advanced'; Value='IsBatteryPercentageEnabled'; Type='DWord'; Target=1; Risk='LOW'; Balanced=$false; UserEditable=$true; Enforcement='None'; ApplyAllowed=$true; LegacyPolicy=$false }
+    [pscustomobject]@{ Id='center-taskbar'; Category='Taskbar'; Name='Center taskbar icons'; Path='HKCU:\Software\Microsoft\Windows\CurrentVersion\Explorer\Advanced'; Value='TaskbarAl'; Type='DWord'; Target=1; Risk='LOW'; Balanced=$false; UserEditable=$true; Enforcement='None'; ApplyAllowed=$true; LegacyPolicy=$false }
+    [pscustomobject]@{ Id='enable-window-snapping'; Category='Multitasking'; Name='Enable Snap windows'; Path='HKCU:\Control Panel\Desktop'; Value='WindowArrangementActive'; Type='String'; Target='1'; Risk='LOW'; Balanced=$false; UserEditable=$true; Enforcement='None'; ApplyAllowed=$true; LegacyPolicy=$false }
+    [pscustomobject]@{ Id='disable-storage-sense'; Category='Storage'; Name='Disable Storage Sense'; Path='HKCU:\SOFTWARE\Microsoft\Windows\CurrentVersion\StorageSense\Parameters\StoragePolicy'; Value='01'; Type='DWord'; Target=0; Risk='LOW'; Balanced=$false; UserEditable=$true; Enforcement='None'; ApplyAllowed=$true; LegacyPolicy=$false }
 )
 
 $LegacyTweaks = @(

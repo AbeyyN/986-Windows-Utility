@@ -9,7 +9,7 @@ An open-source Windows utility by **AbeyyTechXy / AbeyyN** focused on safe, insp
 [![License](https://img.shields.io/github/license/AbeyyN/986-Windows-Utility?style=for-the-badge)](LICENSE)
 [![Contributors](https://img.shields.io/github/contributors/AbeyyN/986-Windows-Utility?style=for-the-badge)](https://github.com/AbeyyN/986-Windows-Utility/graphs/contributors)
 
-> **Project status:** public alpha v0.5.0. 986 remains a tweak-first Windows utility; active tweaks are user-editable preferences with no persistent enforcement.
+> **Project status:** public alpha v0.6.0. 986 remains a tweak-first Windows utility; active tweaks are user-editable preferences with no persistent enforcement.
 
 ## Why 986 Windows Utility?
 
@@ -22,16 +22,16 @@ Detect current state → Snapshot original state → Apply → Verify
 ```
 
 This is the foundation of **986 State-Aware Reversible Tweaks**.
-## v0.5.0 features
+## v0.6.0 features
 
 - Windows-native PowerShell 5.1 + WPF GUI
-- **25 active user-editable preference tweaks** across Explorer, Privacy, Performance, Gaming, Taskbar, Start and Personalization
+- **30 active user-editable preference tweaks** across Explorer, Privacy, Performance, Gaming, Taskbar, Start, Personalization, Accessibility, Multitasking and Storage
 - **4 legacy Policy tweaks are Undo-only** for pre-v0.5 snapshots and cannot be newly applied
 - **986 Profiles**: Balanced, Performance, Laptop and Technician built-ins
 - user-defined custom profiles stored locally in `state/profiles.json`
 - selecting a profile only changes checkbox selection; it never applies tweaks automatically
 - **Never-Lock User baseline:** active catalog contains no Group Policy paths, Apply is one-shot, and manual Windows/Registry changes remain in control
-- new Windows preference tweaks for Task View, Widgets, taskbar Search, tray-clock seconds, Start layout/recommendations, Game Mode, transparency and dark mode
+- Wave 2 adds Always show scrollbars, battery percentage, taskbar alignment, Snap windows and Storage Sense preferences
 - optional Windows 11 taskbar `End task` right-click action
   - Warning: ending a task can discard unsaved work in that application.
 - **986 Tweak Intelligence Engine** with read-only Registry, Policy, Service and Scheduled Task observations
@@ -90,7 +90,7 @@ The roadmap extends beyond a debloater into a Windows maintenance platform:
 - keep diagnostics, profiles and technician workflows secondary to the tweak engine
 - automated release validation
 
-See [ROADMAP.md](ROADMAP.md), [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) and [docs/INTELLIGENCE.md](docs/INTELLIGENCE.md) and [docs/DOCTOR.md](docs/DOCTOR.md) and [docs/PROFILES.md](docs/PROFILES.md), [docs/TWEAKS.md](docs/TWEAKS.md) and [docs/NO-LOCK.md](docs/NO-LOCK.md).
+See [ROADMAP.md](ROADMAP.md), [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) and [docs/INTELLIGENCE.md](docs/INTELLIGENCE.md) and [docs/DOCTOR.md](docs/DOCTOR.md) and [docs/PROFILES.md](docs/PROFILES.md), [docs/TWEAKS.md](docs/TWEAKS.md) and [docs/NO-LOCK.md](docs/NO-LOCK.md) and [docs/WINUTIL-AUDIT-v0.6.md](docs/WINUTIL-AUDIT-v0.6.md).
 
 ## Contributing
 

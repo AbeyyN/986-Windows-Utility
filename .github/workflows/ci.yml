@@ -33,6 +33,9 @@ jobs:
       - name: Enforce Never-Lock tweak baseline
         shell: powershell
         run: .\tests\NoLock.Tests.ps1
+      - name: Validate Wave 2 tweak definitions
+        shell: powershell
+        run: .\tests\Wave2.Tests.ps1
       - name: Prove manual preference override persists
         shell: powershell
         run: .\tests\PreferenceOverride.Tests.ps1
