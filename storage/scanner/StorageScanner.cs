@@ -33,7 +33,7 @@ public static class StorageScanner {
     static readonly HashSet<string> App = new HashSet<string>(StringComparer.OrdinalIgnoreCase) { ".exe", ".msi", ".msix", ".appx", ".appxbundle", ".dll" };
 
     static string Classify(string path) {
-        string p = path.Replace('/', '\').ToLowerInvariant();
+        string p = path.Replace('/', '\\').ToLowerInvariant();
         if (p.Contains("\\windows\\") || p.Contains("\\programdata\\microsoft\\windows\\")) return "System";
         if (p.Contains("\\program files\\") || p.Contains("\\program files (x86)\\") || p.Contains("\\windowsapps\\")) return "Apps";
         string ext = Path.GetExtension(path);
