@@ -41,7 +41,7 @@
 - add CI proof that manual user overrides persist after 986 Apply
 - expand compatibility/side-effect evidence before each new tweak ships
 
-## v0.6 — Windows Tweaks Expansion Wave 2 (in development)
+## v0.6 — Windows Tweaks Expansion Wave 2 (shipped)
 
 - audit current WinUtil tweak catalog as reference, not as source-of-truth behavior
 - ship only ordinary Windows preferences that remain manually user-editable

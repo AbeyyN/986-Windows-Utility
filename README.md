@@ -9,7 +9,7 @@ An open-source Windows utility by **AbeyyTechXy / AbeyyN** focused on safe, insp
 [![License](https://img.shields.io/github/license/AbeyyN/986-Windows-Utility?style=for-the-badge)](LICENSE)
 [![Contributors](https://img.shields.io/github/contributors/AbeyyN/986-Windows-Utility?style=for-the-badge)](https://github.com/AbeyyN/986-Windows-Utility/graphs/contributors)
 
-> **Project status:** v0.6.0-alpha.1 development line. 986 remains a tweak-first Windows utility; active tweaks are user-editable preferences with no persistent enforcement.
+> **Project status:** public alpha v0.6.0. 986 remains a tweak-first Windows utility; active tweaks are user-editable preferences with no persistent enforcement.
 
 ## Why 986 Windows Utility?
 
@@ -22,7 +22,7 @@ Detect current state → Snapshot original state → Apply → Verify
 ```
 
 This is the foundation of **986 State-Aware Reversible Tweaks**.
-## v0.6.0-alpha.1 development features
+## v0.6.0 features
 
 - Windows-native PowerShell 5.1 + WPF GUI
 - **30 active user-editable preference tweaks** across Explorer, Privacy, Performance, Gaming, Taskbar, Start, Personalization, Accessibility, Multitasking and Storage

@@ -2,7 +2,7 @@
 
 All notable project changes are documented here.
 
-## [Unreleased] - v0.6 Windows Tweaks Expansion Wave 2
+## [0.6.0] - 2026-09-12
 
 ### Added
 
