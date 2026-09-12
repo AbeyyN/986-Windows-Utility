@@ -55,8 +55,19 @@ jobs:
         shell: powershell
         run: .\tests\StorageShell.Tests.ps1
       - name: Compile native 986 Storage shell DLL
-        shell: cmd
-        run: call "%ProgramFiles%\Microsoft Visual Studio\2022\Enterprise\VC\Auxiliary\Build\vcvars64.bat" && cl /nologo /std:c++17 /EHsc /LD storage\shell\StorageShell.cpp /link /DEF:storage\shell\StorageShell.def ole32.lib shell32.lib user32.lib uuid.lib /OUT:%TEMP%\986StorageShell.dll
+        shell: powershell
+        run: |
+          $vswhere = "${env:ProgramFiles(x86)}\Microsoft Visual Studio\Installer\vswhere.exe"
+          if (-not (Test-Path $vswhere)) { throw 'vswhere.exe not found.' }
+          $vs = & $vswhere -latest -products * -requires Microsoft.VisualStudio.Component.VC.Tools.x86.x64 -property installationPath
+          if (-not $vs) { throw 'Visual C++ toolchain not found.' }
+          $vcvars = Join-Path $vs 'VC\Auxiliary\Build\vcvars64.bat'
+          if (-not (Test-Path $vcvars)) { throw "vcvars64.bat not found: $vcvars" }
+          $out = Join-Path $env:TEMP '986StorageShell.dll'
+          $cmd = '"' + $vcvars + '" && cl /nologo /std:c++17 /EHsc /LD storage\shell\StorageShell.cpp /link /DEF:storage\shell\StorageShell.def ole32.lib shell32.lib user32.lib uuid.lib /OUT:"' + $out + '"'
+          & cmd.exe /d /c $cmd
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          if (-not (Test-Path $out)) { throw '986StorageShell.dll was not produced.' }
       - name: WPF profile UI smoke test
         shell: powershell
         run: .\tests\Gui.Tests.ps1
