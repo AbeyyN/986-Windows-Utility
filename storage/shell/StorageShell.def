@@ -1,0 +1,4 @@
+LIBRARY "986StorageShell"
+EXPORTS
+    DllCanUnloadNow PRIVATE
+    DllGetClassObject PRIVATE
