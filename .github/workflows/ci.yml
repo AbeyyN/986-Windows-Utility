@@ -42,6 +42,21 @@ jobs:
       - name: Validate single-tweak selection
         shell: powershell
         run: .\tests\SingleSelection.Tests.ps1
+      - name: Validate custom resolution safety layer
+        shell: powershell
+        run: .\tests\Resolution.Tests.ps1
+      - name: Compile and test storage scanner
+        shell: powershell
+        run: .\tests\StorageScanner.Tests.ps1
+      - name: Validate storage registration contract
+        shell: powershell
+        run: .\tests\StorageRegistration.Tests.ps1
+      - name: Validate native storage shell contract
+        shell: powershell
+        run: .\tests\StorageShell.Tests.ps1
+      - name: Compile native 986 Storage shell DLL
+        shell: cmd
+        run: call "%ProgramFiles%\Microsoft Visual Studio\2022\Enterprise\VC\Auxiliary\Build\vcvars64.bat" && cl /nologo /std:c++17 /EHsc /LD storage\shell\StorageShell.cpp /link /DEF:storage\shell\StorageShell.def ole32.lib shell32.lib user32.lib uuid.lib /OUT:%TEMP%\986StorageShell.dll
       - name: WPF profile UI smoke test
         shell: powershell
         run: .\tests\Gui.Tests.ps1
