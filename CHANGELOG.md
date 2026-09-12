@@ -2,6 +2,19 @@
 
 All notable project changes are documented here.
 
+## [Unreleased] - v0.6 Windows Tweaks Expansion Wave 2
+
+### Added
+
+- five optional user-editable Windows Settings tweaks: scrollbars, battery percentage, taskbar alignment, Snap windows and Storage Sense
+- Wave 2 CI definition guard covering exact registry paths, values, types and targets
+- documented manual Windows Settings path for every Wave 2 tweak
+
+### Validation
+
+- all five candidates passed real Apply -> Verify -> Undo exact-original round-trip testing on AbeyyN986, Windows 11 build 26200
+- WinUtil current `config/tweaks.json` was used as a reference catalog; Policy, service, AppX and ambiguous/compound candidates were not copied into the active Wave 2 set
+
 ## [0.5.0] - 2026-09-10
 
 ### Added

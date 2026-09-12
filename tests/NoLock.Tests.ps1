@@ -11,7 +11,7 @@ if (-not $legacyMatch.Success) { throw 'Cannot isolate legacy tweak catalog.' }
 $legacy = $legacyMatch.Groups[1].Value
 
 $activeRows = [regex]::Matches($active,"(?m)^\s*\[pscustomobject\]@\{.*Id='([^']+)'.*$")
-if ($activeRows.Count -ne 25) { throw "Expected 25 active preference tweaks; found $($activeRows.Count)." }
+if ($activeRows.Count -ne 30) { throw "Expected 30 active preference tweaks; found $($activeRows.Count)." }
 foreach ($row in $activeRows) {
     $line = $row.Value
     $id = $row.Groups[1].Value
@@ -39,4 +39,4 @@ foreach ($file in $productionFiles) {
         if ($source -match [regex]::Escape($term)) { throw "Automatic enforcement primitive '$term' found in $($file.Name)." }
     }
 }
-Write-Host 'PASS: 25 active tweaks are non-policy, user-editable, one-shot preferences; 4 old policy tweaks are undo-only.' -ForegroundColor Green
+Write-Host 'PASS: 30 active tweaks are non-policy, user-editable, one-shot preferences; 4 old policy tweaks are undo-only.' -ForegroundColor Green

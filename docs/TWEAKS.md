@@ -1,6 +1,6 @@
 # Shipped Tweaks
 
-v0.5 catalog: **25 active preference tweaks** plus **4 legacy policy entries that are Undo-only**.
+v0.6 alpha catalog: **30 active preference tweaks** plus **4 legacy policy entries that are Undo-only**.
 
 All active tweaks are one-shot Windows preferences: `UserEditable=true`, `Enforcement=None`. 986 does not keep re-applying a target after the user changes it manually.
 
@@ -23,19 +23,36 @@ All active tweaks are one-shot Windows preferences: `UserEditable=true`, `Enforc
 | disable-game-capture | Gaming | Disable Xbox/Game DVR capture | no |
 | taskbar-end-task | Taskbar | Enable taskbar End task | yes |
 | hide-task-view | Taskbar | Hide Task View button | yes |
-| hide-taskbar-search | Taskbar | Hide taskbar Search | yes || show-clock-seconds | Taskbar | Show seconds in system tray clock | no |
+| hide-taskbar-search | Taskbar | Hide taskbar Search | yes |
+| show-clock-seconds | Taskbar | Show seconds in system tray clock | no |
 | start-more-pins | Start | Use more pins in Start | no |
 | disable-start-recommendations | Start | Disable Start recommendations | yes |
 | enable-game-mode | Gaming | Enable Game Mode | no |
 | disable-transparency | Personalization | Disable transparency effects | no |
 | dark-apps | Personalization | Use dark mode for apps | no |
 | dark-system | Personalization | Use dark mode for Windows | no |
+| always-show-scrollbars | Accessibility | Always show scrollbars | no |
+| show-battery-percentage | Taskbar | Show battery percentage | no |
+| center-taskbar | Taskbar | Center taskbar icons | no |
+| enable-window-snapping | Multitasking | Enable Snap windows | no |
+| disable-storage-sense | Storage | Disable Storage Sense | no |
+
+## Wave 2 manual Windows Settings paths
+
+| Tweak | User can change it manually at |
+|---|---|
+| Always show scrollbars | Settings > Accessibility > Visual effects |
+| Show battery percentage | Settings > System > Power & battery |
+| Center taskbar icons | Settings > Personalization > Taskbar > Taskbar behaviors |
+| Enable Snap windows | Settings > System > Multitasking |
+| Disable Storage Sense | Settings > System > Storage > Storage Sense |
+
+All five Wave 2 candidates passed real Apply -> Verify -> Undo exact-original round-trip testing on Windows 11 build 26200 before inclusion.
 
 ## Legacy Undo-only entries
 
 These are retained only for users who have a pre-v0.5 original-state snapshot. They cannot be newly applied.
-
-| ID | Previous behavior | v0.5 behavior |
+| ID | Previous behavior | v0.6 behavior |
 |---|---|---|
 | disable-activity-feed | Policy value | Undo-only |
 | disable-publish-activity | Policy value | Undo-only |

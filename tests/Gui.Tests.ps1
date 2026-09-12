@@ -21,4 +21,4 @@ foreach ($handler in '$BtnProfileSelect.Add_Click','$BtnProfileSave.Add_Click','
 }
 if ($text -notmatch [regex]::Escape('986 never locks or auto-reapplies them')) { throw 'Never-Lock user message missing from GUI.' }
 $window.Close()
-Write-Host 'PASS: v0.5 WPF XAML loads, profile controls are wired, and Never-Lock message is present.' -ForegroundColor Green
+Write-Host 'PASS: v0.6 WPF XAML loads, profile controls are wired, and Never-Lock message is present.' -ForegroundColor Green

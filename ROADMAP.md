@@ -41,6 +41,14 @@
 - add CI proof that manual user overrides persist after 986 Apply
 - expand compatibility/side-effect evidence before each new tweak ships
 
+## v0.6 — Windows Tweaks Expansion Wave 2 (in development)
+
+- audit current WinUtil tweak catalog as reference, not as source-of-truth behavior
+- ship only ordinary Windows preferences that remain manually user-editable
+- add Accessibility, Taskbar, Multitasking and Storage preferences
+- require real Windows Apply/Verify/Undo exact-original evidence before promotion
+- keep all new Wave 2 tweaks optional; do not silently change the 986 Balanced profile
+
 ## v1.0 — Stable
 
 - documented compatibility matrix
