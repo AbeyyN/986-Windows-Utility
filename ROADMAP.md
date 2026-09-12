@@ -49,6 +49,16 @@
 - require real Windows Apply/Verify/Undo exact-original evidence before promotion
 - keep all new Wave 2 tweaks optional; do not silently change the 986 Balanced profile
 
+## v0.7 — Storage View + Custom Resolution (in development)
+
+- add optional `986 Storage` namespace under This PC using per-user reversible Shell registration
+- keep recursive storage scanning out of `explorer.exe`; use a read-only out-of-process scanner
+- render Android-style per-volume category breakdowns for Apps, Videos, Pictures, Documents, Audio, System, Other and Free
+- add advanced Custom Resolution capability with Windows existing-mode support plus AMD ADLX, NVIDIA NVAPI and Intel IGCL provider paths
+- require trial/confirmation/automatic-revert before any custom display mode can be kept
+- never use EDID registry hacks, driver patching, watchdog enforcement or forced unsupported panel modes
+- keep the tweak-first v0.6 baseline unchanged while these optional advanced features mature
+
 ## v1.0 — Stable
 
 - documented compatibility matrix
