@@ -54,20 +54,15 @@ jobs:
       - name: Validate native storage shell contract
         shell: powershell
         run: .\tests\StorageShell.Tests.ps1
-      - name: Compile native 986 Storage shell DLL
+      - name: Build complete 986 Storage payload
         shell: powershell
         run: |
-          $vswhere = "${env:ProgramFiles(x86)}\Microsoft Visual Studio\Installer\vswhere.exe"
-          if (-not (Test-Path $vswhere)) { throw 'vswhere.exe not found.' }
-          $vs = & $vswhere -latest -products * -requires Microsoft.VisualStudio.Component.VC.Tools.x86.x64 -property installationPath
-          if (-not $vs) { throw 'Visual C++ toolchain not found.' }
-          $vcvars = Join-Path $vs 'VC\Auxiliary\Build\vcvars64.bat'
-          if (-not (Test-Path $vcvars)) { throw "vcvars64.bat not found: $vcvars" }
-          $out = Join-Path $env:TEMP '986StorageShell.dll'
-          $cmd = '"' + $vcvars + '" && cl /nologo /std:c++17 /EHsc /LD storage\shell\StorageShell.cpp /link /DEF:storage\shell\StorageShell.def ole32.lib shell32.lib user32.lib uuid.lib /OUT:"' + $out + '"'
-          & cmd.exe /d /c $cmd
-          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
-          if (-not (Test-Path $out)) { throw '986StorageShell.dll was not produced.' }
+          $out = Join-Path $env:TEMP '986StorageBuild'
+          $result = .\storage\Build-StorageView.ps1 -OutputDir $out
+          if (-not (Test-Path $result.Scanner)) { throw '986StorageScanner.exe missing.' }
+          if (-not (Test-Path $result.Shell)) { throw '986StorageShell.dll missing.' }
+          Write-Host "Scanner SHA256=$($result.ScannerSha256)"
+          Write-Host "Shell SHA256=$($result.ShellSha256)"
       - name: WPF profile UI smoke test
         shell: powershell
         run: .\tests\Gui.Tests.ps1
