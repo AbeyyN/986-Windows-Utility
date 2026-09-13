@@ -198,16 +198,20 @@ function Invoke-986ResolutionTrial {
     $keep = New-Object Windows.Controls.Button; $keep.Content='Keep'; $keep.Width=120; $keep.Height=36; $keep.HorizontalAlignment='Left'; $keep.Margin='55,125,0,0'
     $revert = New-Object Windows.Controls.Button; $revert.Content='Revert'; $revert.Width=120; $revert.Height=36; $revert.HorizontalAlignment='Right'; $revert.Margin='0,125,55,0'
     $grid.Children.Add($text) | Out-Null; $grid.Children.Add($keep) | Out-Null; $grid.Children.Add($revert) | Out-Null; $window.Content=$grid
-    $script:trialChoice = 'timeout'; $remaining = $Seconds
+    $trialState = [pscustomobject]@{ Choice='timeout'; Remaining=[int]$Seconds }
     $timer = New-Object Windows.Threading.DispatcherTimer; $timer.Interval=[TimeSpan]::FromSeconds(1)
-    $update = { $text.Text = "Testing $Width x $Height @ $RefreshRate Hz.`nKeep this mode? Auto-revert in $remaining seconds." }
+    $update = { $text.Text = "Testing $Width x $Height @ $RefreshRate Hz.`nKeep this mode? Auto-revert in $($trialState.Remaining) seconds." }
     & $update
-    $timer.Add_Tick({ $remaining--; & $update; if ($remaining -le 0) { $timer.Stop(); $window.Close() } })
-    $keep.Add_Click({ $script:trialChoice='keep'; $timer.Stop(); $window.Close() })
-    $revert.Add_Click({ $script:trialChoice='revert'; $timer.Stop(); $window.Close() })
+    $timer.Add_Tick({
+        $trialState.Remaining = [int]$trialState.Remaining - 1
+        & $update
+        if ($trialState.Remaining -le 0) { $timer.Stop(); $window.Close() }
+    })
+    $keep.Add_Click({ $trialState.Choice='keep'; $timer.Stop(); $window.Close() })
+    $revert.Add_Click({ $trialState.Choice='revert'; $timer.Stop(); $window.Close() })
     $timer.Start(); $window.ShowDialog() | Out-Null
 
-    if ($script:trialChoice -eq 'keep') {
+    if ($trialState.Choice -eq 'keep') {
         New-Item -ItemType File -Path $token -Force | Out-Null
         $persist = Invoke-986ResolutionHelper -Arguments @('apply-persist',$Display.DeviceName,[string]$Width,[string]$Height,[string]$RefreshRate)
         Start-986TrialTokenCleanup -TokenPath $token -Seconds ($Seconds + 20)

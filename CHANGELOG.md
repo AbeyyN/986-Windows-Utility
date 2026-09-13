@@ -5,6 +5,7 @@ All notable project changes are documented here.
 ## [0.7.0-rc.3] - 2026-09-13
 
 ### Fixed
+- Fixed Custom Resolution Keep/Revert countdown state scoping so the DispatcherTimer always reaches the 15-second auto-revert deadline instead of stalling in a PowerShell event-handler child scope.
 - Hardened native `986 Storage` Scan / Refresh dispatch after RC2 physical-machine testing proved the scanner binary was healthy but the Explorer button path did not launch it.
 - Scan hit-testing now derives from the current Explorer client geometry instead of depending on a hitbox populated by a prior paint cycle.
 - Promoted Scan / Refresh to a real owner-drawn child `BUTTON` control with `BN_CLICKED` dispatch, keyboard focus and resize-aware layout instead of relying only on parent-window mouse hit-testing.

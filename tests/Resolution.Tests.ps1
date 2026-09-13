@@ -20,6 +20,8 @@ if ($srcText -notmatch 'CDS_TEST') { throw 'Native helper must test a requested 
 if ($srcText -match 'CDS_ENABLE_UNSAFE_MODES|CDS_GLOBAL') { throw 'Unsafe/global display mode flag found.' }
 $moduleText = Get-Content $module -Raw -Encoding UTF8
 if ($moduleText -notmatch 'Start-986TrialTokenCleanup') { throw 'Trial keep token cleanup guard missing.' }
+if ($moduleText -match '\$remaining--') { throw 'Scalar countdown mutation is unsafe inside WPF event scope.' }
+if ($moduleText -notmatch '\$trialState\.Remaining\s*=\s*\[int\]\$trialState\.Remaining\s*-\s*1') { throw 'Scoped mutable resolution countdown guard missing.' }
 if ($moduleText -match 'New-Item -ItemType File -Path \$token -Force \| Out-Null\s*\r?\n\s*Remove-Item \$token') { throw 'Keep token is removed before fallback reverter can observe it.' }
 foreach ($forbidden in '\\EDID','HKLM:','DisplayOverride','OverrideEdidFlags','Register-WmiEvent','ScheduledTask') {
     if ($moduleText -match $forbidden) { throw "Forbidden custom-resolution enforcement/hack found: $forbidden" }
