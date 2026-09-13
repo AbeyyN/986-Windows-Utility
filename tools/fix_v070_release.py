@@ -9,7 +9,6 @@ t = t.replace("""        Remove-Item $token -Force -ErrorAction SilentlyContinue
 t = t.replace("""    Remove-Item $token -Force -ErrorAction SilentlyContinue\n    [pscustomobject]@{ Kept=$false; Status='REVERTED';""", """    Start-986TrialTokenCleanup -TokenPath $token -Seconds ($Seconds + 20)\n    [pscustomobject]@{ Kept=$false; Status='REVERTED';""",1)
 p.write_text(t,encoding='utf-8',newline='\n')
 
-# Strengthen test so the fallback keep-token bug cannot return.
 tp = Path(__file__).resolve().parents[1] / 'tests' / 'Resolution.Tests.ps1'
 s = tp.read_text(encoding='utf-8')
 anchor = "$moduleText = Get-Content $module -Raw -Encoding UTF8\n"
@@ -18,3 +17,4 @@ if anchor not in s: raise SystemExit('resolution test anchor missing')
 s=s.replace(anchor,insert,1)
 tp.write_text(s,encoding='utf-8',newline='\n')
 print('V070_RELEASE_SAFETY_FIXED')
+# trigger
