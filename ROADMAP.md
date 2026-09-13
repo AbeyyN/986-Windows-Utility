@@ -59,6 +59,15 @@
 - never use EDID registry hacks, driver patching, watchdog enforcement or forced unsupported panel modes
 - keep the tweak-first v0.6 baseline unchanged while these optional advanced features mature
 
+## v0.7 — Storage View + Custom Resolution (release candidate)
+
+- Android-style segmented storage cards inside an optional This PC namespace view
+- out-of-process scanner; no permanent background service
+- per-user reversible shell registration with foreign-collision guard
+- arbitrary driver-tested width/height/refresh via CDS_TEST
+- 15-second Keep/Revert trial with one-shot crash fallback reverter
+- exact original resolution snapshot + Undo; no auto-reapply
+
 ## v1.0 — Stable
 
 - documented compatibility matrix

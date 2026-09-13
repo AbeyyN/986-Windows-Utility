@@ -2,6 +2,13 @@
 
 All notable project changes are documented here.
 
+## [0.7.0-rc.1] - 2026-09-13
+
+- Added optional 986 Storage native File Explorer view with segmented per-drive storage categories.
+- Added out-of-process storage scanner and reversible per-user This PC registration.
+- Added 986 Custom Resolution driver trial engine with CDS_TEST, timed Keep/Revert and exact Undo.
+- Preserved the 30 active tweak + 4 legacy Undo-only baseline and Never-Lock rule.
+
 ## [0.6.0] - 2026-09-12
 
 ### Added
