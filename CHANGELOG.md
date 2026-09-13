@@ -2,6 +2,40 @@
 
 All notable project changes are documented here.
 
+## [0.7.0] - 2026-09-13
+
+### Fixed
+- Fixed Custom Resolution Keep/Revert countdown state scoping so the DispatcherTimer always reaches the 15-second auto-revert deadline instead of stalling in a PowerShell event-handler child scope.
+- Hardened native `986 Storage` Scan / Refresh dispatch after RC2 physical-machine testing proved the scanner binary was healthy but the Explorer button path did not launch it.
+- Scan hit-testing now derives from the current Explorer client geometry instead of depending on a hitbox populated by a prior paint cycle.
+- Promoted Scan / Refresh to a real owner-drawn child `BUTTON` control with `BN_CLICKED` dispatch, keyboard focus and resize-aware layout instead of relying only on parent-window mouse hit-testing.
+- Scanner process launch now supplies the executable path and working directory explicitly and records Windows launch errors for the user-visible storage card.
+- Fixed Win32 command-line quoting for fixed-drive roots such as `C:\`; trailing backslashes are no longer placed inside naive quotes that can corrupt scanner arguments.
+- Reworked full-volume scanning onto one-pass Win32 `FindFirstFileExW` / `FindNextFileW` enumeration so file size comes directly from directory records instead of a separate managed `FileInfo` lookup per file.
+
+### Validation
+- RC2 official ZIP checksum, per-user COM registration, real File Explorer `986StorageViewWindow`, and responsive 374px-wide button geometry were verified on `AbeyyN986`.
+- The RC2 scanner executable independently produced valid JSON on the same machine, isolating the failure to Explorer dispatch rather than scanner packaging or scan logic.
+- The hardened shell contract and complete native Storage payload compile passed on the GitHub Windows runner before RC3 promotion.
+- Stable promotion gates passed on AbeyyN986: real File Explorer Storage scan/unregister recovery and physical 2240x1400 to 1920x1200 timeout-revert, Keep, fallback-window and exact Undo verification.
+
+## [0.7.0-rc.2] - 2026-09-13
+
+### Fixed
+- Made the native `986 Storage` renderer responsive to narrow real File Explorer content panes instead of forcing a 640px minimum card width.
+- Storage category labels now adapt between 4, 2, or 1 columns and the `Scan / Refresh` control remains inside the visible card geometry.
+
+### Validation
+- RC1 physical-machine smoke testing on `AbeyyN986` proved per-user COM registration and a real `986StorageViewWindow` opened inside File Explorer, and exposed the narrow-pane Scan button regression before stable promotion.
+- Added a regression guard that rejects the old forced 640px card layout.
+
+## [0.7.0-rc.1] - 2026-09-13
+
+- Added optional 986 Storage native File Explorer view with segmented per-drive storage categories.
+- Added out-of-process storage scanner and reversible per-user This PC registration.
+- Added 986 Custom Resolution driver trial engine with CDS_TEST, timed Keep/Revert and exact Undo.
+- Preserved the 30 active tweak + 4 legacy Undo-only baseline and Never-Lock rule.
+
 ## [0.6.0] - 2026-09-12
 
 ### Added

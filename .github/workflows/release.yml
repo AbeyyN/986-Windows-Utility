@@ -1,0 +1,131 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - 'v*'
+
+permissions:
+  contents: write
+
+jobs:
+  validate-package-release:
+    runs-on: windows-latest
+    steps:
+      - name: Checkout tagged source
+        uses: actions/checkout@v4
+
+      - name: Verify tag matches application version
+        shell: powershell
+        run: |
+          $text = Get-Content .\986-Windows-Utility.ps1 -Raw -Encoding UTF8
+          $m = [regex]::Match($text,'\$Version = ''([^'']+)''')
+          if (-not $m.Success) { throw 'Application version declaration was not found.' }
+          $version = $m.Groups[1].Value
+          $expectedTag = 'v' + $version
+          if ($env:GITHUB_REF_NAME -ne $expectedTag) {
+            throw "Tag $env:GITHUB_REF_NAME does not match application version $version."
+          }
+          "RELEASE_VERSION=$version" | Out-File -FilePath $env:GITHUB_ENV -Append -Encoding utf8
+          "RELEASE_TAG=$expectedTag" | Out-File -FilePath $env:GITHUB_ENV -Append -Encoding utf8
+
+      - name: Run full validation suite
+        shell: powershell
+        run: |
+          $tests = @(
+            'Encoding.Tests.ps1',
+            'Static.Tests.ps1',
+            'Audit.Tests.ps1',
+            'Doctor.Tests.ps1',
+            'Profile.Tests.ps1',
+            'NoLock.Tests.ps1',
+            'Wave2.Tests.ps1',
+            'PreferenceOverride.Tests.ps1',
+            'SingleSelection.Tests.ps1',
+            'Resolution.Tests.ps1',
+            'StorageScanner.Tests.ps1',
+            'StorageRegistration.Tests.ps1',
+            'StorageShell.Tests.ps1',
+            'Gui.Tests.ps1'
+          )
+          foreach ($test in $tests) {
+            & (Join-Path .\tests $test)
+            if (-not $?) { throw "Test failed: $test" }
+          }
+          .\986-Windows-Utility.ps1 -AuditOnly | Out-Null
+          if (-not $?) { throw 'Headless Audit smoke failed.' }
+          .\986-Windows-Utility.ps1 -DoctorOnly | Out-Null
+          if (-not $?) { throw 'Headless Doctor smoke failed.' }
+          .\986-Windows-Utility.ps1 -ProfileList | Out-Null
+          if (-not $?) { throw 'Headless ProfileList smoke failed.' }
+
+      - name: Build native payloads and complete package
+        shell: powershell
+        run: |
+          $tag = $env:RELEASE_TAG
+          $pkgName = "986-Windows-Utility-$tag"
+          $stageRoot = Join-Path $env:RUNNER_TEMP '986-release-stage'
+          $pkg = Join-Path $stageRoot $pkgName
+          if (Test-Path $stageRoot) { Remove-Item $stageRoot -Recurse -Force }
+          New-Item -ItemType Directory -Path $pkg -Force | Out-Null
+          foreach ($dir in @('modules','display','storage\registration','storage\bin','docs')) {
+            New-Item -ItemType Directory -Path (Join-Path $pkg $dir) -Force | Out-Null
+          }
+
+          Copy-Item .\986-Windows-Utility.ps1,.\Start-986-Windows-Utility.cmd,.\bootstrap.ps1,.\README.md,.\LICENSE,.\CHANGELOG.md -Destination $pkg
+          Copy-Item .\modules\*.ps1 -Destination (Join-Path $pkg 'modules')
+          Copy-Item .\display\ResolutionManager.ps1,.\display\ResolutionUi.ps1 -Destination (Join-Path $pkg 'display')
+          Copy-Item .\storage\registration\Register-StorageView.ps1 -Destination (Join-Path $pkg 'storage\registration')
+          Copy-Item .\docs\*.md -Destination (Join-Path $pkg 'docs')
+
+          $displayBuild = & .\display\Build-ResolutionHelper.ps1 -OutputDir (Join-Path $env:RUNNER_TEMP '986-display-build')
+          if (-not (Test-Path $displayBuild.Helper)) { throw '986ResolutionHelper.exe was not produced.' }
+          Copy-Item $displayBuild.Helper -Destination (Join-Path $pkg 'display\986ResolutionHelper.exe')
+
+          $storageBuild = & .\storage\Build-StorageView.ps1 -OutputDir (Join-Path $env:RUNNER_TEMP '986-storage-build')
+          if (-not (Test-Path $storageBuild.Shell)) { throw '986StorageShell.dll was not produced.' }
+          if (-not (Test-Path $storageBuild.Scanner)) { throw '986StorageScanner.exe was not produced.' }
+          Copy-Item $storageBuild.Shell -Destination (Join-Path $pkg 'storage\bin\986StorageShell.dll')
+          Copy-Item $storageBuild.Scanner -Destination (Join-Path $pkg 'storage\bin\986StorageScanner.exe')
+
+          $zip = Join-Path $PWD "$pkgName.zip"
+          if (Test-Path $zip) { Remove-Item $zip -Force }
+          Compress-Archive -Path $pkg -DestinationPath $zip -CompressionLevel Optimal
+          $hash = (Get-FileHash $zip -Algorithm SHA256).Hash.ToLowerInvariant()
+          $sum = Join-Path $PWD "SHA256SUMS-$tag.txt"
+          "$hash  $pkgName.zip" | Set-Content -Path $sum -Encoding ascii
+
+          $verifyRoot = Join-Path $env:RUNNER_TEMP '986-release-verify'
+          Expand-Archive -LiteralPath $zip -DestinationPath $verifyRoot -Force
+          $verifyPkg = Join-Path $verifyRoot $pkgName
+          foreach ($required in @(
+            '986-Windows-Utility.ps1',
+            'Start-986-Windows-Utility.cmd',
+            'bootstrap.ps1',
+            'display\986ResolutionHelper.exe',
+            'storage\bin\986StorageShell.dll',
+            'storage\bin\986StorageScanner.exe',
+            'storage\registration\Register-StorageView.ps1'
+          )) {
+            if (-not (Test-Path (Join-Path $verifyPkg $required))) { throw "Release package missing $required" }
+          }
+
+          "RELEASE_ZIP=$zip" | Out-File -FilePath $env:GITHUB_ENV -Append -Encoding utf8
+          "RELEASE_SUM=$sum" | Out-File -FilePath $env:GITHUB_ENV -Append -Encoding utf8
+          Write-Host "RELEASE_ZIP_SHA256=$hash"
+
+      - name: Publish GitHub release
+        shell: powershell
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          $args = @(
+            'release','create',$env:RELEASE_TAG,
+            $env:RELEASE_ZIP,$env:RELEASE_SUM,
+            '--title',("986 Windows Utility " + $env:RELEASE_TAG),
+            '--generate-notes',
+            '--verify-tag'
+          )
+          if ($env:RELEASE_VERSION -match '-') { $args += '--prerelease' }
+          & gh @args
+          if ($LASTEXITCODE -ne 0) { throw 'GitHub release publication failed.' }

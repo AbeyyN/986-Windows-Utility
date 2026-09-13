@@ -9,3 +9,7 @@ state/
 Thumbs.db
 artifacts/
 release/
+storage/bin/
+StorageShell.obj
+StorageShell.lib
+StorageShell.exp

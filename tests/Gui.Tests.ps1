@@ -13,12 +13,12 @@ Add-Type -AssemblyName WindowsBase
 $reader = New-Object System.Xml.XmlNodeReader $xml
 $window = [Windows.Markup.XamlReader]::Load($reader)
 
-foreach ($name in 'ProfilePicker','BtnProfileSelect','BtnProfileSave','BtnProfileDelete','BtnApply','BtnUndo','TweakPanel','LogBox') {
+foreach ($name in 'ProfilePicker','BtnProfileSelect','BtnProfileSave','BtnProfileDelete','BtnApply','BtnUndo','BtnStorage','BtnResolution','TweakPanel','LogBox') {
     if (-not $window.FindName($name)) { throw "WPF control missing: $name" }
 }
-foreach ($handler in '$BtnProfileSelect.Add_Click','$BtnProfileSave.Add_Click','$BtnProfileDelete.Add_Click') {
+foreach ($handler in '$BtnProfileSelect.Add_Click','$BtnProfileSave.Add_Click','$BtnProfileDelete.Add_Click','$BtnStorage.Add_Click','$BtnResolution.Add_Click') {
     if ($text -notmatch [regex]::Escape($handler)) { throw "Profile UI handler missing: $handler" }
 }
 if ($text -notmatch [regex]::Escape('986 never locks or auto-reapplies them')) { throw 'Never-Lock user message missing from GUI.' }
 $window.Close()
-Write-Host 'PASS: v0.6 WPF XAML loads, profile controls are wired, and Never-Lock message is present.' -ForegroundColor Green
+Write-Host 'PASS: v0.7 RC WPF loads, Storage/Resolution controls are wired, and Never-Lock message is present.' -ForegroundColor Green
