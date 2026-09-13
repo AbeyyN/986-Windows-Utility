@@ -2,7 +2,7 @@
 
 All notable project changes are documented here.
 
-## [0.7.0-rc.3] - 2026-09-13
+## [0.7.0] - 2026-09-13
 
 ### Fixed
 - Fixed Custom Resolution Keep/Revert countdown state scoping so the DispatcherTimer always reaches the 15-second auto-revert deadline instead of stalling in a PowerShell event-handler child scope.
@@ -17,6 +17,7 @@ All notable project changes are documented here.
 - RC2 official ZIP checksum, per-user COM registration, real File Explorer `986StorageViewWindow`, and responsive 374px-wide button geometry were verified on `AbeyyN986`.
 - The RC2 scanner executable independently produced valid JSON on the same machine, isolating the failure to Explorer dispatch rather than scanner packaging or scan logic.
 - The hardened shell contract and complete native Storage payload compile passed on the GitHub Windows runner before RC3 promotion.
+- Stable promotion gates passed on AbeyyN986: real File Explorer Storage scan/unregister recovery and physical 2240x1400 to 1920x1200 timeout-revert, Keep, fallback-window and exact Undo verification.
 
 ## [0.7.0-rc.2] - 2026-09-13
 
