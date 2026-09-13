@@ -1,0 +1,44 @@
+name: v07-rc3-promote
+on:
+  push:
+    branches: [ feature/v0.7-storage-view ]
+    paths:
+      - .github/workflows/v07-rc3-promote.yml
+permissions:
+  contents: write
+jobs:
+  promote:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: feature/v0.7-storage-view
+          fetch-depth: 0
+      - name: Apply RC3 promotion
+        shell: powershell
+        run: python .\tools\promote_v07_rc3.py
+      - name: Validate promoted source
+        shell: powershell
+        run: |
+          .\tests\Encoding.Tests.ps1
+          .\tests\Static.Tests.ps1
+          .\tests\Resolution.Tests.ps1
+          .\tests\StorageShell.Tests.ps1
+          if ((Get-Content .\986-Windows-Utility.ps1 -Raw -Encoding UTF8) -notmatch "\$Version = '0\.7\.0-rc\.3'") { throw 'RC3 version promotion failed.' }
+      - name: Build native payloads
+        shell: powershell
+        run: |
+          $storage = .\storage\Build-StorageView.ps1 -OutputDir (Join-Path $env:TEMP '986StorageRC3')
+          if (-not (Test-Path $storage.Shell) -or -not (Test-Path $storage.Scanner)) { throw 'Storage RC3 payload build failed.' }
+          $display = .\display\Build-ResolutionHelper.ps1 -OutputDir (Join-Path $env:TEMP '986DisplayRC3')
+          if (-not (Test-Path $display.Helper)) { throw 'Display RC3 payload build failed.' }
+      - name: Commit RC3 and remove transient helpers
+        shell: powershell
+        run: |
+          Remove-Item .\tools\promote_v07_rc3.py -Force
+          Remove-Item .\.github\workflows\v07-rc3-promote.yml -Force
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -A
+          git commit -m "Promote v0.7.0-rc.3 after Storage dispatch hardening"
+          git push origin HEAD:feature/v0.7-storage-view
