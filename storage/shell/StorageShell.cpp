@@ -259,7 +259,15 @@ private:
 
         int top = 88;
         for (auto& d : drives_) {
-            const int left = 28, right = max(left + 640, client.right - 28), cardH = 184;
+            const int margin = client.right < 520 ? 14 : 28;
+            const int left = margin;
+            const int right = max(left + 180, client.right - margin);
+            const int contentWidth = max(1, right - left - 36);
+            const int labelColumns = contentWidth >= 700 ? 4 : (contentWidth >= 260 ? 2 : 1);
+            const int labelRows = (7 + labelColumns - 1) / labelColumns;
+            const int labelY = top + 82;
+            const int buttonTop = labelY + labelRows * 25 + 8;
+            const int cardH = (buttonTop - top) + 32 + 16;
             RECT card{ left, top, right, top + cardH };
             HBRUSH cardBrush = CreateSolidBrush(RGB(30, 41, 59)); FillRect(dc, &card, cardBrush); DeleteObject(cardBrush);
             wchar_t header[128]{};
@@ -297,24 +305,23 @@ private:
 
             SetTextColor(dc, RGB(203, 213, 225));
             const wchar_t* names[] = { L"Apps", L"Videos", L"Pictures", L"Documents", L"Audio", L"System", L"Other" };
-            int labelY = top + 82;
             if (d.cacheLoaded) {
-                for (int row = 0; row < 2; ++row) {
-                    int labelX = left + 18;
-                    int start = row * 4, end = min(start + 4, 7);
-                    for (int i = start; i < end; ++i) {
-                        std::wstring value = FormatGb(values[i]);
-                        wchar_t line[96]{}; swprintf_s(line, L"%s %s", names[i], value.c_str());
-                        TextOutW(dc, labelX, labelY + row * 25, line, static_cast<int>(wcslen(line)));
-                        labelX += 185;
-                    }
+                const int columnWidth = max(1, contentWidth / labelColumns);
+                for (int i = 0; i < 7; ++i) {
+                    const int row = i / labelColumns;
+                    const int col = i % labelColumns;
+                    const int labelX = left + 18 + col * columnWidth;
+                    std::wstring value = FormatGb(values[i]);
+                    wchar_t line[96]{}; swprintf_s(line, L"%s %s", names[i], value.c_str());
+                    TextOutW(dc, labelX, labelY + row * 25, line, static_cast<int>(wcslen(line)));
                 }
             } else {
                 const wchar_t* msg = d.scanning ? L"Scanning in background... Explorer remains responsive." : L"No category cache yet. Scan this drive to analyze storage.";
-                TextOutW(dc, left + 18, labelY, msg, static_cast<int>(wcslen(msg)));
+                RECT messageRect{ left + 18, labelY, right - 18, buttonTop - 4 };
+                DrawTextW(dc, msg, -1, &messageRect, DT_LEFT | DT_TOP | DT_WORDBREAK | DT_END_ELLIPSIS);
             }
 
-            d.scanButton = RECT{ right - 150, top + 136, right - 18, top + 168 };
+            d.scanButton = RECT{ max(left + 18, right - 150), buttonTop, right - 18, buttonTop + 32 };
             HBRUSH button = CreateSolidBrush(d.scanning ? RGB(71, 85, 105) : RGB(234, 88, 12)); FillRect(dc, &d.scanButton, button); DeleteObject(button);
             SetTextColor(dc, RGB(255, 255, 255));
             const wchar_t* btn = d.scanning ? L"Scanning..." : L"Scan / Refresh";

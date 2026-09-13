@@ -17,4 +17,8 @@ if ($cppText -match 'DllRegisterServer|DllUnregisterServer|RegCreateKey|RegSetVa
     throw 'Native shell DLL must not self-register or write registry state.'
 }
 if ($defText -match 'DllRegisterServer|DllUnregisterServer') { throw 'Self-registration export found.' }
+if ($cppText -match 'max\(left \+ 640') { throw 'Storage view must not force a 640px card width.' }
+foreach ($marker in 'client.right < 520','labelColumns','buttonTop','max(left + 18, right - 150)') {
+    if ($cppText -notmatch [regex]::Escape($marker)) { throw "Missing responsive Storage view marker: $marker" }
+}
 Write-Host 'PASS: Storage shell CLSID, COM surface and no-self-registration contract validated.' -ForegroundColor Green
