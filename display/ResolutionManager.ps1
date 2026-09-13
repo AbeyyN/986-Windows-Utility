@@ -165,6 +165,16 @@ if (-not (Test-Path '$($TokenPath.Replace("'","''"))')) {
     Start-Process powershell.exe -WindowStyle Hidden -ArgumentList @('-NoProfile','-ExecutionPolicy','Bypass','-EncodedCommand',$encoded) | Out-Null
 }
 
+function Start-986TrialTokenCleanup {
+    param([Parameter(Mandatory=$true)][string]$TokenPath,[int]$Seconds=35)
+    $script = @"
+Start-Sleep -Seconds $Seconds
+Remove-Item -LiteralPath '$($TokenPath.Replace("'","''"))' -Force -ErrorAction SilentlyContinue
+"@
+    $encoded = [Convert]::ToBase64String([Text.Encoding]::Unicode.GetBytes($script))
+    Start-Process powershell.exe -WindowStyle Hidden -ArgumentList @('-NoProfile','-ExecutionPolicy','Bypass','-EncodedCommand',$encoded) | Out-Null
+}
+
 function Invoke-986ResolutionTrial {
     param(
         [Parameter(Mandatory=$true)]$Display,[int]$Width,[int]$Height,[int]$RefreshRate,
@@ -200,12 +210,12 @@ function Invoke-986ResolutionTrial {
     if ($script:trialChoice -eq 'keep') {
         New-Item -ItemType File -Path $token -Force | Out-Null
         $persist = Invoke-986ResolutionHelper -Arguments @('apply-persist',$Display.DeviceName,[string]$Width,[string]$Height,[string]$RefreshRate)
-        Remove-Item $token -Force -ErrorAction SilentlyContinue
+        Start-986TrialTokenCleanup -TokenPath $token -Seconds ($Seconds + 20)
         return [pscustomobject]@{ Kept=($persist.ExitCode -eq 0); Status=if($persist.ExitCode -eq 0){'KEPT'}else{'PERSIST_FAILED'}; Detail=$persist.Output }
     }
     New-Item -ItemType File -Path $token -Force | Out-Null
     Invoke-986ResolutionHelper -Arguments @('apply-temp',$Display.DeviceName,[string]$Display.Width,[string]$Display.Height,[string]$Display.RefreshRate) | Out-Null
-    Remove-Item $token -Force -ErrorAction SilentlyContinue
+    Start-986TrialTokenCleanup -TokenPath $token -Seconds ($Seconds + 20)
     [pscustomobject]@{ Kept=$false; Status='REVERTED'; Detail=@() }
 }
 
