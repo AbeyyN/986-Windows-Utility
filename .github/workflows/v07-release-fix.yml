@@ -1,0 +1,37 @@
+name: v07-release-fix
+on:
+  push:
+    branches: [ feature/v0.7-storage-view ]
+    paths: [ tools/fix_v070_release.py ]
+permissions:
+  contents: write
+jobs:
+  fix:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: feature/v0.7-storage-view
+      - name: Apply release safety fix
+        shell: powershell
+        run: python tools/fix_v070_release.py
+      - name: Validate resolution safety
+        shell: powershell
+        run: |
+          .\tests\Encoding.Tests.ps1
+          .\tests\Static.Tests.ps1
+          .\tests\Gui.Tests.ps1
+          .\tests\Resolution.Tests.ps1
+          .\tests\StorageScanner.Tests.ps1
+          .\tests\StorageRegistration.Tests.ps1
+          .\tests\StorageShell.Tests.ps1
+      - name: Commit final RC safety fix and remove helper
+        shell: powershell
+        run: |
+          Remove-Item tools\fix_v070_release.py -Force
+          Remove-Item .github\workflows\v07-release-fix.yml -Force
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -A
+          git commit -m "Harden v0.7 custom resolution fallback safety"
+          git push origin HEAD:feature/v0.7-storage-view
