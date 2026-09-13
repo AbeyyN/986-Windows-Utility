@@ -44,7 +44,7 @@ $bootstrapContracts = @(
     'storage\\bin\\986StorageShell\.dll',
     'storage\\bin\\986StorageScanner\.exe',
     'storage\\registration\\Register-StorageView\.ps1',
-    "\$item\.Name -eq 'state'"
+    '\$item\.Name -eq ''state'''
 )
 foreach ($contract in $bootstrapContracts) {
     if ($bootText -notmatch $contract) { throw "Bootstrap stable-release contract missing: $contract" }
