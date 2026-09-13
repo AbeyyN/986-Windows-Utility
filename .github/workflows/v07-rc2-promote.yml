@@ -1,0 +1,44 @@
+name: v07-rc2-promote
+on:
+  push:
+    branches: [ feature/v0.7-storage-view ]
+    paths:
+      - .github/workflows/v07-rc2-promote.yml
+permissions:
+  contents: write
+jobs:
+  promote:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: feature/v0.7-storage-view
+          fetch-depth: 0
+      - name: Apply RC2 promotion
+        shell: powershell
+        run: python .\tools\promote_v07_rc2.py
+      - name: Validate promoted source
+        shell: powershell
+        run: |
+          .\tests\Encoding.Tests.ps1
+          .\tests\Static.Tests.ps1
+          .\tests\Resolution.Tests.ps1
+          .\tests\StorageShell.Tests.ps1
+          if ((Get-Content .\986-Windows-Utility.ps1 -Raw -Encoding UTF8) -notmatch "\$Version = '0\.7\.0-rc\.2'") { throw 'RC2 version promotion failed.' }
+      - name: Build native payloads
+        shell: powershell
+        run: |
+          $storage = .\storage\Build-StorageView.ps1 -OutputDir (Join-Path $env:TEMP '986StorageRC2')
+          if (-not (Test-Path $storage.Shell) -or -not (Test-Path $storage.Scanner)) { throw 'Storage RC2 payload build failed.' }
+          $display = .\display\Build-ResolutionHelper.ps1 -OutputDir (Join-Path $env:TEMP '986DisplayRC2')
+          if (-not (Test-Path $display.Helper)) { throw 'Display RC2 payload build failed.' }
+      - name: Commit RC2 and remove transient helpers
+        shell: powershell
+        run: |
+          Remove-Item .\tools\promote_v07_rc2.py -Force
+          Remove-Item .\.github\workflows\v07-rc2-promote.yml -Force
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -A
+          git commit -m "Promote v0.7.0-rc.2 after real Explorer responsive fix"
+          git push origin HEAD:feature/v0.7-storage-view
