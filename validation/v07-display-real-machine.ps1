@@ -1,5 +1,5 @@
 $ErrorActionPreference = 'Stop'
-$work = Join-Path $env:TEMP '986-v07-rc2-validation'
+$work = Join-Path $env:TEMP '986-v07-rc3-validation'
 $app = Get-ChildItem -LiteralPath $work -Filter '986-Windows-Utility.ps1' -File -Recurse | Select-Object -First 1
 if (-not $app) { throw 'RC validation payload missing' }
 $root = $app.Directory.FullName

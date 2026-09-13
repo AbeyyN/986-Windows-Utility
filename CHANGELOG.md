@@ -2,6 +2,18 @@
 
 All notable project changes are documented here.
 
+## [0.7.0-rc.3] - 2026-09-13
+
+### Fixed
+- Hardened native `986 Storage` Scan / Refresh dispatch after RC2 physical-machine testing proved the scanner binary was healthy but the Explorer button path did not launch it.
+- Scan hit-testing now derives from the current Explorer client geometry instead of depending on a hitbox populated by a prior paint cycle.
+- Scanner process launch now supplies the executable path and working directory explicitly and records Windows launch errors for the user-visible storage card.
+
+### Validation
+- RC2 official ZIP checksum, per-user COM registration, real File Explorer `986StorageViewWindow`, and responsive 374px-wide button geometry were verified on `AbeyyN986`.
+- The RC2 scanner executable independently produced valid JSON on the same machine, isolating the failure to Explorer dispatch rather than scanner packaging or scan logic.
+- The hardened shell contract and complete native Storage payload compile passed on the GitHub Windows runner before RC3 promotion.
+
 ## [0.7.0-rc.2] - 2026-09-13
 
 ### Fixed
