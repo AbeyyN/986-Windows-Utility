@@ -1,6 +1,6 @@
 $ErrorActionPreference = 'Stop'
 $clsid = '{5FCCE720-D806-4B6A-A5F1-F060344FC88D}'
-$work = Join-Path $env:TEMP '986-v07-rc1-validation'
+$work = Join-Path $env:TEMP '986-v07-rc2-validation'
 $app = Get-ChildItem -LiteralPath $work -Filter '986-Windows-Utility.ps1' -File -Recurse | Select-Object -First 1
 if (-not $app) { throw 'RC validation payload missing' }
 $root = $app.Directory.FullName
@@ -101,9 +101,21 @@ public static class W986Storage {
     if (-not [W986Storage]::GetClientRect($view, [ref]$rect)) { throw 'GetClientRect failed' }
     Write-Output ('VIEW_CLIENT=' + $rect.Right + 'x' + $rect.Bottom)
 
-    $x = $rect.Right - 84
-    $y = 240
-    if ($x -lt 1 -or $rect.Bottom -lt 257) { throw 'Explorer storage view too small for scan button gate' }
+    $cardTop = 88
+    $margin = if ($rect.Right -lt 520) { 14 } else { 28 }
+    $left = $margin
+    $right = [Math]::Max($left + 180, $rect.Right - $margin)
+    $contentWidth = [Math]::Max(1, $right - $left - 36)
+    $columns = if ($contentWidth -ge 700) { 4 } elseif ($contentWidth -ge 260) { 2 } else { 1 }
+    $rows = [int][Math]::Ceiling(7.0 / $columns)
+    $labelY = $cardTop + 82
+    $buttonTop = $labelY + ($rows * 25) + 8
+    $buttonLeft = [Math]::Max($left + 18, $right - 150)
+    $buttonRight = $right - 18
+    $x = [int](($buttonLeft + $buttonRight) / 2)
+    $y = $buttonTop + 16
+    Write-Output ('SCAN_BUTTON_RECT=' + $buttonLeft + ',' + $buttonTop + ',' + $buttonRight + ',' + ($buttonTop + 32))
+    if ($x -lt 1 -or $y -lt 1 -or $x -ge $rect.Right -or $y -ge $rect.Bottom) { throw 'Responsive Scan button is outside the real Explorer client area' }
     $lp = [IntPtr](($y -shl 16) -bor ($x -band 0xffff))
     if (-not [W986Storage]::PostMessage($view, 0x0202, [IntPtr]::Zero, $lp)) { throw 'Scan button PostMessage failed' }
     Write-Output ('SCAN_CLICK_POSTED=' + $x + ',' + $y)

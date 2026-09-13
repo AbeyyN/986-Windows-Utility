@@ -2,6 +2,16 @@
 
 All notable project changes are documented here.
 
+## [0.7.0-rc.2] - 2026-09-13
+
+### Fixed
+- Made the native `986 Storage` renderer responsive to narrow real File Explorer content panes instead of forcing a 640px minimum card width.
+- Storage category labels now adapt between 4, 2, or 1 columns and the `Scan / Refresh` control remains inside the visible card geometry.
+
+### Validation
+- RC1 physical-machine smoke testing on `AbeyyN986` proved per-user COM registration and a real `986StorageViewWindow` opened inside File Explorer, and exposed the narrow-pane Scan button regression before stable promotion.
+- Added a regression guard that rejects the old forced 640px card layout.
+
 ## [0.7.0-rc.1] - 2026-09-13
 
 - Added optional 986 Storage native File Explorer view with segmented per-drive storage categories.
