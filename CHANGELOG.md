@@ -7,6 +7,7 @@ All notable project changes are documented here.
 ### Fixed
 - Hardened native `986 Storage` Scan / Refresh dispatch after RC2 physical-machine testing proved the scanner binary was healthy but the Explorer button path did not launch it.
 - Scan hit-testing now derives from the current Explorer client geometry instead of depending on a hitbox populated by a prior paint cycle.
+- Promoted Scan / Refresh to a real owner-drawn child `BUTTON` control with `BN_CLICKED` dispatch, keyboard focus and resize-aware layout instead of relying only on parent-window mouse hit-testing.
 - Scanner process launch now supplies the executable path and working directory explicitly and records Windows launch errors for the user-visible storage card.
 - Fixed Win32 command-line quoting for fixed-drive roots such as `C:\`; trailing backslashes are no longer placed inside naive quotes that can corrupt scanner arguments.
 - Reworked full-volume scanning onto one-pass Win32 `FindFirstFileExW` / `FindNextFileW` enumeration so file size comes directly from directory records instead of a separate managed `FileInfo` lookup per file.
