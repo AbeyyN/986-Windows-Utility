@@ -23,7 +23,7 @@ $bootText = Get-Content $bootstrap -Raw -Encoding UTF8
 $changelogText = Get-Content $changelog -Raw -Encoding UTF8
 $ids = [regex]::Matches($text,"Id='([^']+)'\s*; Category=") | ForEach-Object { $_.Groups[1].Value }
 if ($ids.Count -ne 34 -or ($ids|Sort-Object -Unique).Count -ne $ids.Count) { throw 'Expected 30 active + 4 legacy unique tweak IDs.' }
-$appVersionMatch = [regex]::Match($text,"\$Version = '([^']+)'" )
+$appVersionMatch = [regex]::Match($text,'\$Version = ''([^'']+)''')
 $changelogVersionMatch = [regex]::Match($changelogText,'(?m)^## \[([^\]]+)\] - ')
 if (-not $appVersionMatch.Success) { throw 'Application version declaration was not found.' }
 if (-not $changelogVersionMatch.Success) { throw 'Latest changelog version heading was not found.' }
