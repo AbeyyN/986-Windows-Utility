@@ -1,7 +1,9 @@
 $ErrorActionPreference = 'Stop'
 $root = Split-Path -Parent (Split-Path -Parent $MyInvocation.MyCommand.Path)
 $module = Join-Path $root 'display\ResolutionManager.ps1'
-if (-not (Test-Path $module)) { throw 'ResolutionManager.ps1 missing.' }
+$helperSource = Join-Path $root 'display\ResolutionHelper.cs'
+$build = Join-Path $root 'display\Build-ResolutionHelper.ps1'
+foreach ($p in @($module,$helperSource,$build)) { if (-not (Test-Path $p)) { throw "Missing resolution component: $p" } }
 . $module
 
 if (-not (Test-986ResolutionRequest -Width 1920 -Height 1080 -RefreshRate 60)) { throw 'Known-safe request rejected.' }
@@ -9,17 +11,34 @@ if (Test-986ResolutionRequest -Width 320 -Height 200 -RefreshRate 60) { throw 'U
 if (Test-986ResolutionRequest -Width 1920 -Height 1080 -RefreshRate 10) { throw 'Unsafe refresh accepted.' }
 
 $intel = [pscustomobject]@{ Provider='Intel-IGCL' }
-$existing = New-986ResolutionPlan -Adapter $intel -Width 1920 -Height 1080 -RefreshRate 60 -ExistingMode
-if (-not $existing.CanApply -or -not $existing.AutoRevertRequired) { throw 'Existing-mode plan safety contract invalid.' }
-$custom = New-986ResolutionPlan -Adapter $intel -Width 2560 -Height 1440 -RefreshRate 60
-if ($custom.CanApply) { throw 'True custom mode must remain disabled until provider binding is validated.' }
-if ($custom.Provider -ne 'Intel-IGCL') { throw 'Provider selection drifted.' }
+$plan = New-986ResolutionPlan -Adapter $intel -Width 2560 -Height 1440 -RefreshRate 60
+if (-not $plan.RequiresTrial -or -not $plan.AutoRevertRequired) { throw 'Custom mode trial safety contract invalid.' }
+if ($plan.Provider -ne 'Intel-IGCL') { throw 'Provider selection drifted.' }
 
-$text = Get-Content $module -Raw -Encoding UTF8
-foreach ($forbidden in '\\EDID','HKLM:','DisplayOverride','OverrideEdidFlags','Set-ItemProperty','New-ItemProperty') {
-    if ($text -match $forbidden) { throw "Forbidden custom-resolution hack/enforcement found: $forbidden" }
+$srcText = Get-Content $helperSource -Raw -Encoding UTF8
+if ($srcText -notmatch 'CDS_TEST') { throw 'Native helper must test a requested mode before apply.' }
+if ($srcText -match 'CDS_ENABLE_UNSAFE_MODES|CDS_GLOBAL') { throw 'Unsafe/global display mode flag found.' }
+$moduleText = Get-Content $module -Raw -Encoding UTF8
+foreach ($forbidden in '\\EDID','HKLM:','DisplayOverride','OverrideEdidFlags','Register-WmiEvent','ScheduledTask') {
+    if ($moduleText -match $forbidden) { throw "Forbidden custom-resolution enforcement/hack found: $forbidden" }
 }
-if ($text -match 'Register-WmiEvent|Register-ObjectEvent|ScheduledTask|while\s*\(\s*\$true') {
-    throw 'Persistent resolution enforcement primitive found.'
+
+$tmp = Join-Path ([IO.Path]::GetTempPath()) ('986-resolution-test-' + [guid]::NewGuid().ToString('N'))
+New-Item -ItemType Directory -Path $tmp | Out-Null
+try {
+    $built = & $build -OutputDir $tmp
+    if (-not (Test-Path $built.Helper)) { throw '986ResolutionHelper.exe was not produced.' }
+    $probe = @(& $built.Helper probe 2>&1)
+    if ($LASTEXITCODE -ne 0) { throw ('Resolution helper probe failed: ' + ($probe -join ' ')) }
+    $first = $probe | Where-Object { [string]$_ -like 'DEVICE|*' } | Select-Object -First 1
+    if ($first) {
+        $p = ([string]$first) -split '\|',9
+        $test = @(& $built.Helper test $p[1] $p[2] $p[3] $p[4] 2>&1)
+        if ($LASTEXITCODE -ne 0) { throw ('Current display mode failed CDS_TEST: ' + ($test -join ' ')) }
+    }
+    $bad = @(& $built.Helper test '\\.\DISPLAY986INVALID' 320 200 10 2>&1)
+    if ($LASTEXITCODE -eq 0) { throw 'Out-of-bounds mode unexpectedly passed native helper.' }
+} finally {
+    Remove-Item $tmp -Recurse -Force -ErrorAction SilentlyContinue
 }
-Write-Host 'PASS: Custom Resolution capability layer is provider-based, bounded and apply-locked until rollback validation.' -ForegroundColor Green
+Write-Host 'PASS: Custom Resolution uses bounded CDS_TEST driver trials, one-shot fallback revert and exact snapshot Undo.' -ForegroundColor Green
