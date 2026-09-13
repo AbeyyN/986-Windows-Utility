@@ -31,7 +31,14 @@ try {
     if ($report.Categories.Audio -ne 19) { throw 'Audio classification failed.' }
     if ($report.Categories.Apps -ne 23) { throw 'App classification failed.' }
     if ($report.Categories.Other -ne 29) { throw 'Other classification failed.' }
-    Write-Host 'PASS: Storage scanner compiles and classifies deterministic fixture bytes.' -ForegroundColor Green
+    $scannerSourceText = Get-Content $source -Raw -Encoding UTF8
+foreach ($nativeMarker in 'FindFirstFileExW','FindNextFileW','WIN32_FIND_DATA','FindFirstExLargeFetch','nFileSizeHigh','nFileSizeLow') {
+    if ($scannerSourceText -notmatch [regex]::Escape($nativeMarker)) { throw "Missing native scanner marker: $nativeMarker" }
+}
+foreach ($slowMarker in 'Directory.EnumerateFiles','new FileInfo(') {
+    if ($scannerSourceText -match [regex]::Escape($slowMarker)) { throw "Legacy per-file managed enumeration remains: $slowMarker" }
+}
+Write-Host 'PASS: Storage scanner compiles and classifies deterministic fixture bytes.' -ForegroundColor Green
 } finally {
     Remove-Item $build -Recurse -Force -ErrorAction SilentlyContinue
 }

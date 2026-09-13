@@ -9,6 +9,7 @@ All notable project changes are documented here.
 - Scan hit-testing now derives from the current Explorer client geometry instead of depending on a hitbox populated by a prior paint cycle.
 - Scanner process launch now supplies the executable path and working directory explicitly and records Windows launch errors for the user-visible storage card.
 - Fixed Win32 command-line quoting for fixed-drive roots such as `C:\`; trailing backslashes are no longer placed inside naive quotes that can corrupt scanner arguments.
+- Reworked full-volume scanning onto one-pass Win32 `FindFirstFileExW` / `FindNextFileW` enumeration so file size comes directly from directory records instead of a separate managed `FileInfo` lookup per file.
 
 ### Validation
 - RC2 official ZIP checksum, per-user COM registration, real File Explorer `986StorageViewWindow`, and responsive 374px-wide button geometry were verified on `AbeyyN986`.
