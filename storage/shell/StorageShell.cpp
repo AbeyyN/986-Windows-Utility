@@ -1,5 +1,6 @@
 #define INITGUID
 #include <windows.h>
+#include <windowsx.h>
 #include <shlobj.h>
 #include <shobjidl.h>
 #include <new>
@@ -250,9 +251,11 @@ private:
         HFONT titleFont = CreateFontW(24, 0, 0, 0, FW_SEMIBOLD, FALSE, FALSE, FALSE, DEFAULT_CHARSET, 0, 0, CLEARTYPE_QUALITY, 0, L"Segoe UI");
         HFONT textFont = CreateFontW(17, 0, 0, 0, FW_NORMAL, FALSE, FALSE, FALSE, DEFAULT_CHARSET, 0, 0, CLEARTYPE_QUALITY, 0, L"Segoe UI");
         HFONT old = static_cast<HFONT>(SelectObject(dc, titleFont));
-        TextOutW(dc, 28, 20, L"986 Storage", 11);
+        const wchar_t* title = L"986 Storage";
+        TextOutW(dc, 28, 20, title, static_cast<int>(wcslen(title)));
         SelectObject(dc, textFont);
-        TextOutW(dc, 28, 52, L"Android-style storage breakdown inside File Explorer", 49);
+        const wchar_t* subtitle = L"Android-style storage breakdown inside File Explorer";
+        TextOutW(dc, 28, 52, subtitle, static_cast<int>(wcslen(subtitle)));
 
         int top = 88;
         for (auto& d : drives_) {
