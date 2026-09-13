@@ -9,7 +9,7 @@ An open-source Windows utility by **AbeyyTechXy / AbeyyN** focused on safe, insp
 [![License](https://img.shields.io/github/license/AbeyyN/986-Windows-Utility?style=for-the-badge)](LICENSE)
 [![Contributors](https://img.shields.io/github/contributors/AbeyyN/986-Windows-Utility?style=for-the-badge)](https://github.com/AbeyyN/986-Windows-Utility/graphs/contributors)
 
-> **Project status:** public alpha v0.6.0. 986 remains a tweak-first Windows utility; active tweaks are user-editable preferences with no persistent enforcement.
+> **Project status:** stable v0.7.0. 986 remains a tweak-first Windows utility; active tweaks are user-editable preferences with no persistent enforcement.
 
 ## Why 986 Windows Utility?
 
@@ -22,7 +22,7 @@ Detect current state → Snapshot original state → Apply → Verify
 ```
 
 This is the foundation of **986 State-Aware Reversible Tweaks**.
-## v0.6.0 features
+## v0.7.0 features
 
 - Windows-native PowerShell 5.1 + WPF GUI
 - **30 active user-editable preference tweaks** across Explorer, Privacy, Performance, Gaming, Taskbar, Start, Personalization, Accessibility, Multitasking and Storage
@@ -32,6 +32,8 @@ This is the foundation of **986 State-Aware Reversible Tweaks**.
 - selecting a profile only changes checkbox selection; it never applies tweaks automatically
 - **Never-Lock User baseline:** active catalog contains no Group Policy paths, Apply is one-shot, and manual Windows/Registry changes remain in control
 - Wave 2 adds Always show scrollbars, battery percentage, taskbar alignment, Snap windows and Storage Sense preferences
+- **986 Storage View** inside File Explorer with category-based disk usage scanning
+- **Custom Resolution** with test/apply, 15-second safety revert, Keep and exact Undo workflow
 - optional Windows 11 taskbar `End task` right-click action
   - Warning: ending a task can discard unsaved work in that application.
 - **986 Tweak Intelligence Engine** with read-only Registry, Policy, Service and Scheduled Task observations
@@ -52,8 +54,10 @@ This is the foundation of **986 State-Aware Reversible Tweaks**.
 Run **Windows Terminal / PowerShell as Administrator**:
 
 ```powershell
-irm https://raw.githubusercontent.com/AbeyyN/986-Windows-Utility/main/bootstrap.ps1 | iex
+irm https://986-winutil.abeyytechxy.com | iex
 ```
+
+The bootstrap resolves the latest stable GitHub Release, verifies its SHA-256 checksum, installs the complete package under `%LOCALAPPDATA%\AbeyyTechXy\986-Windows-Utility`, preserves the local `state` directory, and launches the utility.
 
 Or download the latest release from the GitHub Releases page and run `Start-986-Windows-Utility.cmd`.
 
