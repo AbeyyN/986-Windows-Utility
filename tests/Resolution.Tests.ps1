@@ -40,6 +40,7 @@ try {
     }
     $bad = @(& $built.Helper test '\\.\DISPLAY986INVALID' 320 200 10 2>&1)
     if ($LASTEXITCODE -eq 0) { throw 'Out-of-bounds mode unexpectedly passed native helper.' }
+    $global:LASTEXITCODE = 0
 } finally {
     Remove-Item $tmp -Recurse -Force -ErrorAction SilentlyContinue
 }
