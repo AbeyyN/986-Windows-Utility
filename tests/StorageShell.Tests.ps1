@@ -18,7 +18,8 @@ if ($cppText -match 'DllRegisterServer|DllUnregisterServer|RegCreateKey|RegSetVa
 }
 if ($defText -match 'DllRegisterServer|DllUnregisterServer') { throw 'Self-registration export found.' }
 if ($cppText -match 'max\(left \+ 640') { throw 'Storage view must not force a 640px card width.' }
-foreach ($marker in 'client.right < 520','labelColumns','buttonTop','max(left + 18, right - 150)') {
-    if ($cppText -notmatch [regex]::Escape($marker)) { throw "Missing responsive Storage view marker: $marker" }
+foreach ($marker in 'BuildCardLayout','client.right < 520','labelColumns','buttonTop','layout.scanButton','GetClientRect(hwnd_, &client)','CreateProcessW(scanner.c_str()','scanError = GetLastError()') {
+    if ($cppText -notmatch [regex]::Escape($marker)) { throw "Missing responsive/dispatch Storage view marker: $marker" }
 }
+if ($cppText -match 'PtInRect\(&d\.scanButton') { throw 'Click dispatch must not depend on a paint-populated DriveCard hitbox.' }
 Write-Host 'PASS: Storage shell CLSID, COM surface and no-self-registration contract validated.' -ForegroundColor Green
