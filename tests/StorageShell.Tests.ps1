@@ -22,4 +22,8 @@ foreach ($marker in 'BuildCardLayout','client.right < 520','labelColumns','butto
     if ($cppText -notmatch [regex]::Escape($marker)) { throw "Missing responsive/dispatch Storage view marker: $marker" }
 }
 if ($cppText -match 'PtInRect\(&d\.scanButton') { throw 'Click dispatch must not depend on a paint-populated DriveCard hitbox.' }
+foreach ($marker in 'QuoteCommandLineArg','QuoteCommandLineArg(scanner)','QuoteCommandLineArg(d.root)','QuoteCommandLineArg(cache)') {
+    if ($cppText -notmatch [regex]::Escape($marker)) { throw "Missing safe scanner command-line marker: $marker" }
+}
+if ($cppText -match [regex]::Escape('L"\\" " + d.root')) { throw 'Drive roots must not use naive quoted trailing-backslash command-line construction.' }
 Write-Host 'PASS: Storage shell CLSID, COM surface and no-self-registration contract validated.' -ForegroundColor Green

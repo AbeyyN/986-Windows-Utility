@@ -85,6 +85,31 @@ static std::wstring CachePath(const std::wstring& root) {
     return path;
 }
 
+static std::wstring QuoteCommandLineArg(const std::wstring& arg) {
+    if (arg.empty()) return L"\"\"";
+    if (arg.find_first_of(L" \t\n\v\"") == std::wstring::npos) return arg;
+    std::wstring out = L"\"";
+    size_t backslashes = 0;
+    for (wchar_t ch : arg) {
+        if (ch == L'\\') {
+            ++backslashes;
+            continue;
+        }
+        if (ch == L'\"') {
+            out.append(backslashes * 2 + 1, L'\\');
+            out.push_back(L'\"');
+            backslashes = 0;
+            continue;
+        }
+        out.append(backslashes, L'\\');
+        backslashes = 0;
+        out.push_back(ch);
+    }
+    out.append(backslashes * 2, L'\\');
+    out.push_back(L'\"');
+    return out;
+}
+
 static bool ReadUtf8File(const std::wstring& path, std::string& out) {
     HANDLE h = CreateFileW(path.c_str(), GENERIC_READ, FILE_SHARE_READ | FILE_SHARE_WRITE | FILE_SHARE_DELETE,
         nullptr, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, nullptr);
@@ -257,7 +282,7 @@ private:
         }
         std::wstring cache = CachePath(d.root);
         DeleteFileW(cache.c_str());
-        std::wstring cmd = L"\"" + scanner + L"\" \"" + d.root + L"\" \"" + cache + L"\"";
+        std::wstring cmd = QuoteCommandLineArg(scanner) + L" " + QuoteCommandLineArg(d.root) + L" " + QuoteCommandLineArg(cache);
         std::vector<wchar_t> mutableCmd(cmd.begin(), cmd.end()); mutableCmd.push_back(L'\0');
         STARTUPINFOW si{}; si.cb = sizeof(si); si.dwFlags = STARTF_USESHOWWINDOW; si.wShowWindow = SW_HIDE;
         PROCESS_INFORMATION pi{};
