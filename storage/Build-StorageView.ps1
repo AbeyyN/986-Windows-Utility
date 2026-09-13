@@ -22,8 +22,9 @@ $vs = & $vswhere -latest -products * -requires Microsoft.VisualStudio.Component.
 if (-not $vs) { throw 'Visual C++ x64 toolchain not found.' }
 $vcvars = Join-Path $vs 'VC\Auxiliary\Build\vcvars64.bat'
 if (-not (Test-Path $vcvars)) { throw "vcvars64.bat not found: $vcvars" }
-$cmd = '"' + $vcvars + '" && cl /nologo /std:c++17 /EHsc /LD "' + $shellSource + '" /link /DEF:"' + $shellDef + '" ole32.lib shell32.lib user32.lib uuid.lib /OUT:"' + $shellOut + '"'
-& cmd.exe /d /c $cmd
+$cmd = '"' + $vcvars + '" && cl /nologo /std:c++17 /EHsc /DUNICODE /D_UNICODE /LD "' + $shellSource + '" /link /DEF:"' + $shellDef + '" ole32.lib shell32.lib user32.lib gdi32.lib uuid.lib /OUT:"' + $shellOut + '"'
+$compileOutput = @(& cmd.exe /d /c $cmd 2>&1)
+$compileOutput | ForEach-Object { Write-Host $_ }
 if ($LASTEXITCODE -ne 0 -or -not (Test-Path $shellOut)) { throw 'Storage shell DLL build failed.' }
 
 [pscustomobject]@{
