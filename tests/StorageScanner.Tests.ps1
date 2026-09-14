@@ -48,6 +48,7 @@ try {
 foreach ($nativeMarker in 'FindFirstFileExW','FindNextFileW','WIN32_FIND_DATA','FindFirstExLargeFetch','nFileSizeHigh','nFileSizeLow') {
     if ($scannerSourceText -notmatch [regex]::Escape($nativeMarker)) { throw "Missing native scanner marker: $nativeMarker" }
 }
+if ($scannerSourceText -notmatch [regex]::Escape('Path.Combine(ctx.RootPrefix, first)')) { throw 'Drive-root TopFolders path must stay absolute.' }
 foreach ($slowMarker in 'Directory.EnumerateFiles','new FileInfo(') {
     if ($scannerSourceText -match [regex]::Escape($slowMarker)) { throw "Legacy per-file managed enumeration remains: $slowMarker" }
 }

@@ -148,7 +148,7 @@ public static class StorageScanner {
         int slash = relative.IndexOf(Path.DirectorySeparatorChar);
         if (slash <= 0) return;
         string first = relative.Substring(0, slash);
-        string folder = Path.Combine(ctx.Root, first);
+        string folder = Path.Combine(ctx.RootPrefix, first);
         long current;
         ctx.RootFolders.TryGetValue(folder, out current);
         ctx.RootFolders[folder] = current + bytes;
