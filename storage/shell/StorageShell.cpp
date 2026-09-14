@@ -7,11 +7,13 @@
 #include <vector>
 #include <string>
 #include <algorithm>
+#include <gdiplus.h>
 #include "StorageGuids.h"
 
 static HINSTANCE g_instance = nullptr;
 static long g_moduleRefs = 0;
 static const wchar_t kStorageViewClass[] = L"986StorageViewWindow";
+static const COLORREF k986Black = RGB(0, 0, 0);
 
 static void ModuleAddRef() { InterlockedIncrement(&g_moduleRefs); }
 static void ModuleRelease() { InterlockedDecrement(&g_moduleRefs); }
@@ -29,6 +31,9 @@ struct DriveCard {
     bool scanning = false;
     DWORD scanError = ERROR_SUCCESS;
     HWND scanButton = nullptr;
+    std::wstring topFilesPreview;
+    std::wstring topFoldersPreview;
+    std::wstring recommendationPreview;
 };
 
 struct CardLayout {
@@ -39,11 +44,13 @@ struct CardLayout {
     int labelColumns = 1;
     int labelRows = 1;
     int labelY = 0;
+    int intelY = 0;
+    int intelHeight = 0;
     int buttonTop = 0;
     int cardHeight = 0;
 };
 
-static CardLayout BuildCardLayout(const RECT& client, int top) {
+static CardLayout BuildCardLayout(const RECT& client, int top, bool intelligence) {
     CardLayout layout{};
     const int margin = client.right < 520 ? 14 : 28;
     const int left = margin;
@@ -52,7 +59,9 @@ static CardLayout BuildCardLayout(const RECT& client, int top) {
     layout.labelColumns = layout.contentWidth >= 700 ? 4 : (layout.contentWidth >= 260 ? 2 : 1);
     layout.labelRows = (7 + layout.labelColumns - 1) / layout.labelColumns;
     layout.labelY = top + 82;
-    layout.buttonTop = layout.labelY + layout.labelRows * 25 + 8;
+    layout.intelY = layout.labelY + layout.labelRows * 25 + 10;
+    layout.intelHeight = intelligence ? (layout.contentWidth >= 520 ? 150 : 235) : 0;
+    layout.buttonTop = layout.intelY + layout.intelHeight + 8;
     layout.cardHeight = (layout.buttonTop - top) + 32 + 16;
     layout.card = RECT{ left, top, right, top + layout.cardHeight };
     layout.bar = RECT{ left + 18, top + 48, right - 18, top + 68 };
@@ -143,6 +152,71 @@ static ULONGLONG JsonNumber(const std::string& json, const char* name) {
     return value;
 }
 
+static int HexValue(char c) {
+    if (c >= '0' && c <= '9') return c - '0';
+    if (c >= 'a' && c <= 'f') return c - 'a' + 10;
+    if (c >= 'A' && c <= 'F') return c - 'A' + 10;
+    return -1;
+}
+
+static void AppendUtf8CodePoint(std::string& out, unsigned cp) {
+    if (cp <= 0x7F) out.push_back(static_cast<char>(cp));
+    else if (cp <= 0x7FF) {
+        out.push_back(static_cast<char>(0xC0 | (cp >> 6)));
+        out.push_back(static_cast<char>(0x80 | (cp & 0x3F)));
+    } else {
+        out.push_back(static_cast<char>(0xE0 | (cp >> 12)));
+        out.push_back(static_cast<char>(0x80 | ((cp >> 6) & 0x3F)));
+        out.push_back(static_cast<char>(0x80 | (cp & 0x3F)));
+    }
+}
+
+static std::wstring Utf8ToWide(const std::string& text) {
+    if (text.empty()) return L"";
+    int chars = MultiByteToWideChar(CP_UTF8, MB_ERR_INVALID_CHARS, text.data(), static_cast<int>(text.size()), nullptr, 0);
+    if (chars <= 0) return L"";
+    std::wstring out(static_cast<size_t>(chars), L'\0');
+    MultiByteToWideChar(CP_UTF8, MB_ERR_INVALID_CHARS, text.data(), static_cast<int>(text.size()), &out[0], chars);
+    return out;
+}
+
+static std::wstring JsonString(const std::string& json, const char* name) {
+    std::string key = std::string("\"") + name + "\":";
+    size_t p = json.find(key);
+    if (p == std::string::npos) return L"";
+    p += key.size();
+    while (p < json.size() && (json[p] == ' ' || json[p] == '\t')) ++p;
+    if (p >= json.size() || json[p] != '"') return L"";
+    ++p;
+    std::string decoded;
+    while (p < json.size()) {
+        char c = json[p++];
+        if (c == '"') break;
+        if (c != '\\') { decoded.push_back(c); continue; }
+        if (p >= json.size()) break;
+        char esc = json[p++];
+        switch (esc) {
+            case '"': decoded.push_back('"'); break;
+            case '\\': decoded.push_back('\\'); break;
+            case '/': decoded.push_back('/'); break;
+            case 'b': decoded.push_back('\b'); break;
+            case 'f': decoded.push_back('\f'); break;
+            case 'n': decoded.push_back('\n'); break;
+            case 'r': decoded.push_back('\r'); break;
+            case 't': decoded.push_back('\t'); break;
+            case 'u': {
+                if (p + 4 > json.size()) break;
+                unsigned cp = 0; bool ok = true;
+                for (int i = 0; i < 4; ++i) { int h = HexValue(json[p + i]); if (h < 0) { ok = false; break; } cp = (cp << 4) | static_cast<unsigned>(h); }
+                if (ok) { AppendUtf8CodePoint(decoded, cp); p += 4; }
+                break;
+            }
+            default: decoded.push_back(esc); break;
+        }
+    }
+    return Utf8ToWide(decoded);
+}
+
 static bool LoadCache(DriveCard& d) {
     std::string json;
     if (!ReadUtf8File(CachePath(d.root), json)) return false;
@@ -153,6 +227,9 @@ static bool LoadCache(DriveCard& d) {
     d.categories.audio = JsonNumber(json, "Audio");
     d.categories.system = JsonNumber(json, "System");
     d.categories.other = JsonNumber(json, "Other");
+    d.topFilesPreview = JsonString(json, "TopFilesPreview");
+    d.topFoldersPreview = JsonString(json, "TopFoldersPreview");
+    d.recommendationPreview = JsonString(json, "RecommendationPreview");
     d.cacheLoaded = true;
     d.scanning = false;
     return true;
@@ -167,17 +244,17 @@ static std::wstring FormatGb(ULONGLONG bytes) {
 
 static COLORREF SegmentColor(size_t index) {
     static const COLORREF colors[] = {
-        RGB(244, 114, 182), RGB(96, 165, 250), RGB(250, 204, 21),
-        RGB(52, 211, 153), RGB(167, 139, 250), RGB(248, 113, 113),
-        RGB(148, 163, 184), RGB(55, 65, 81), RGB(31, 41, 55)
+        RGB(183, 110, 121), RGB(255, 138, 0), RGB(216, 160, 168),
+        RGB(200, 90, 0), RGB(122, 65, 75), RGB(175, 168, 163),
+        RGB(90, 60, 64), RGB(59, 39, 41), RGB(23, 18, 19)
     };
     return colors[index < ARRAYSIZE(colors) ? index : ARRAYSIZE(colors) - 1];
 }
 
 class StorageView final : public IShellView {
 public:
-    StorageView() : refs_(1), hwnd_(nullptr) { ModuleAddRef(); EnumerateDrives(); }
-    ~StorageView() { if (hwnd_) DestroyWindow(hwnd_); ModuleRelease(); }
+    StorageView() : refs_(1), hwnd_(nullptr), gdiplusToken_(0), watermark_(nullptr) { ModuleAddRef(); LoadBrandWatermark(); EnumerateDrives(); }
+    ~StorageView() { if (hwnd_) DestroyWindow(hwnd_); delete watermark_; if (gdiplusToken_) Gdiplus::GdiplusShutdown(gdiplusToken_); ModuleRelease(); }
 
     IFACEMETHODIMP QueryInterface(REFIID riid, void** ppv) override {
         if (!ppv) return E_POINTER;
@@ -208,7 +285,7 @@ public:
         wc.hInstance = g_instance;
         wc.lpszClassName = kStorageViewClass;
         wc.hCursor = LoadCursorW(nullptr, IDC_ARROW);
-        wc.hbrBackground = CreateSolidBrush(RGB(15, 23, 42));
+        wc.hbrBackground = CreateSolidBrush(RGB(0, 0, 0));
         ATOM atom = RegisterClassW(&wc);
         if (!atom && GetLastError() != ERROR_CLASS_ALREADY_EXISTS) return HRESULT_FROM_WIN32(GetLastError());
         hwnd_ = CreateWindowExW(0, kStorageViewClass, L"986 Storage", WS_CHILD | WS_VISIBLE,
@@ -233,6 +310,30 @@ public:
     IFACEMETHODIMP GetItemObject(UINT, REFIID, void**) override { return E_NOINTERFACE; }
 
 private:
+    void LoadBrandWatermark() {
+        Gdiplus::GdiplusStartupInput input;
+        if (Gdiplus::GdiplusStartup(&gdiplusToken_, &input, nullptr) != Gdiplus::Ok) { gdiplusToken_ = 0; return; }
+        std::wstring path = ModuleDirectory() + L"\\..\\..\\assets\\AbeyyTechXy-logo.png";
+        watermark_ = Gdiplus::Image::FromFile(path.c_str(), FALSE);
+        if (!watermark_ || watermark_->GetLastStatus() != Gdiplus::Ok) { delete watermark_; watermark_ = nullptr; }
+    }
+
+    void DrawBrandWatermark(HDC dc, const RECT& client) {
+        if (!watermark_) return;
+        const UINT iw = watermark_->GetWidth(), ih = watermark_->GetHeight();
+        if (!iw || !ih) return;
+        const int cw = max(1, client.right - client.left), ch = max(1, client.bottom - client.top);
+        const double scale = min((cw * 0.55) / static_cast<double>(iw), (ch * 0.55) / static_cast<double>(ih));
+        const int w = max(1, static_cast<int>(iw * scale)), h = max(1, static_cast<int>(ih * scale));
+        const int x = client.left + (cw - w) / 2, y = client.top + (ch - h) / 2;
+        Gdiplus::ColorMatrix matrix = { 1,0,0,0,0, 0,1,0,0,0, 0,0,1,0,0, 0,0,0,0.50f,0, 0,0,0,0,1 };
+        Gdiplus::ImageAttributes attrs;
+        attrs.SetColorMatrix(&matrix, Gdiplus::ColorMatrixFlagsDefault, Gdiplus::ColorAdjustTypeBitmap);
+        Gdiplus::Graphics graphics(dc);
+        graphics.SetInterpolationMode(Gdiplus::InterpolationModeHighQualityBicubic);
+        graphics.DrawImage(watermark_, Gdiplus::Rect(x, y, w, h), 0, 0, iw, ih, Gdiplus::UnitPixel, &attrs);
+    }
+
     static LRESULT CALLBACK WndProc(HWND hwnd, UINT msg, WPARAM wp, LPARAM lp) {
         StorageView* self = reinterpret_cast<StorageView*>(GetWindowLongPtrW(hwnd, GWLP_USERDATA));
         if (msg == WM_NCCREATE) {
@@ -297,7 +398,7 @@ private:
         GetClientRect(hwnd_, &client);
         int top = 88;
         for (auto& d : drives_) {
-            CardLayout layout = BuildCardLayout(client, top);
+            CardLayout layout = BuildCardLayout(client, top, d.cacheLoaded);
             if (d.scanButton) {
                 MoveWindow(d.scanButton,
                     layout.scanButton.left, layout.scanButton.top,
@@ -326,13 +427,13 @@ private:
             if (d.scanButton == dis->hwndItem) { drive = &d; break; }
         }
         if (!drive) return false;
-        COLORREF fill = drive->scanning ? RGB(71, 85, 105) : RGB(234, 88, 12);
-        if ((dis->itemState & ODS_SELECTED) && !drive->scanning) fill = RGB(194, 65, 12);
+        COLORREF fill = drive->scanning ? RGB(122, 65, 75) : RGB(255, 138, 0);
+        if ((dis->itemState & ODS_SELECTED) && !drive->scanning) fill = RGB(200, 90, 0);
         HBRUSH brush = CreateSolidBrush(fill);
         FillRect(dis->hDC, &dis->rcItem, brush);
         DeleteObject(brush);
         SetBkMode(dis->hDC, TRANSPARENT);
-        SetTextColor(dis->hDC, RGB(255, 255, 255));
+        SetTextColor(dis->hDC, RGB(245, 241, 238));
         const wchar_t* text = drive->scanning ? L"Scanning..." : L"Scan / Refresh";
         RECT textRect = dis->rcItem;
         DrawTextW(dis->hDC, text, -1, &textRect, DT_CENTER | DT_VCENTER | DT_SINGLELINE);
@@ -376,6 +477,7 @@ private:
         CloseHandle(pi.hThread); CloseHandle(pi.hProcess);
         d.scanError = ERROR_SUCCESS;
         d.scanning = true; d.cacheLoaded = false; d.categories = CategoryBytes{};
+        d.topFilesPreview.clear(); d.topFoldersPreview.clear(); d.recommendationPreview.clear();
         if (d.scanButton) InvalidateRect(d.scanButton, nullptr, TRUE);
         return true;
     }
@@ -386,7 +488,7 @@ private:
         GetClientRect(hwnd_, &client);
         int top = 88;
         for (auto& d : drives_) {
-            CardLayout layout = BuildCardLayout(client, top);
+            CardLayout layout = BuildCardLayout(client, top, d.cacheLoaded);
             if (PtInRect(&layout.scanButton, p) && !d.scanning) {
                 StartScan(d); InvalidateRect(hwnd_, nullptr, FALSE); break;
             }
@@ -397,8 +499,9 @@ private:
     void Paint(HWND hwnd) {
         PAINTSTRUCT ps{}; HDC dc = BeginPaint(hwnd, &ps);
         RECT client{}; GetClientRect(hwnd, &client);
-        HBRUSH bg = CreateSolidBrush(RGB(15, 23, 42)); FillRect(dc, &client, bg); DeleteObject(bg);
-        SetBkMode(dc, TRANSPARENT); SetTextColor(dc, RGB(241, 245, 249));
+        HBRUSH bg = CreateSolidBrush(RGB(0, 0, 0)); FillRect(dc, &client, bg); DeleteObject(bg);
+        DrawBrandWatermark(dc, client);
+        SetBkMode(dc, TRANSPARENT); SetTextColor(dc, RGB(216, 160, 168));
         HFONT titleFont = CreateFontW(24, 0, 0, 0, FW_SEMIBOLD, FALSE, FALSE, FALSE, DEFAULT_CHARSET, 0, 0, CLEARTYPE_QUALITY, 0, L"Segoe UI");
         HFONT textFont = CreateFontW(17, 0, 0, 0, FW_NORMAL, FALSE, FALSE, FALSE, DEFAULT_CHARSET, 0, 0, CLEARTYPE_QUALITY, 0, L"Segoe UI");
         HFONT old = static_cast<HFONT>(SelectObject(dc, titleFont));
@@ -410,7 +513,7 @@ private:
 
         int top = 88;
         for (auto& d : drives_) {
-            CardLayout layout = BuildCardLayout(client, top);
+            CardLayout layout = BuildCardLayout(client, top, d.cacheLoaded);
             const int left = layout.card.left;
             const int right = layout.card.right;
             const int contentWidth = layout.contentWidth;
@@ -418,14 +521,14 @@ private:
             const int labelY = layout.labelY;
             const int buttonTop = layout.buttonTop;
             const int cardH = layout.cardHeight;
-            HBRUSH cardBrush = CreateSolidBrush(RGB(30, 41, 59)); FillRect(dc, &layout.card, cardBrush); DeleteObject(cardBrush);
+            HBRUSH cardBrush = CreateSolidBrush(RGB(18, 14, 15)); FillRect(dc, &layout.card, cardBrush); DeleteObject(cardBrush);
             wchar_t header[128]{};
             std::wstring freeText = FormatGb(d.free), totalText = FormatGb(d.total);
             swprintf_s(header, L"%c:    %s free of %s", d.root[0], freeText.c_str(), totalText.c_str());
-            SetTextColor(dc, RGB(248, 250, 252)); TextOutW(dc, left + 18, top + 16, header, static_cast<int>(wcslen(header)));
+            SetTextColor(dc, RGB(245, 241, 238)); TextOutW(dc, left + 18, top + 16, header, static_cast<int>(wcslen(header)));
 
             RECT bar = layout.bar;
-            HBRUSH usedBase = CreateSolidBrush(RGB(71, 85, 105)); FillRect(dc, &bar, usedBase); DeleteObject(usedBase);
+            HBRUSH usedBase = CreateSolidBrush(RGB(59, 39, 41)); FillRect(dc, &bar, usedBase); DeleteObject(usedBase);
             ULONGLONG used = d.total > d.free ? d.total - d.free : 0;
             ULONGLONG values[] = { d.categories.apps, d.categories.videos, d.categories.pictures, d.categories.documents,
                 d.categories.audio, d.categories.system, d.categories.other };
@@ -444,15 +547,15 @@ private:
             if (d.total && residual) {
                 int w = static_cast<int>((static_cast<long double>(residual) / d.total) * (bar.right - bar.left));
                 RECT seg{ x, bar.top, min(x + w, bar.right), bar.bottom };
-                HBRUSH rb = CreateSolidBrush(RGB(75, 85, 99)); FillRect(dc, &seg, rb); DeleteObject(rb);
+                HBRUSH rb = CreateSolidBrush(RGB(59, 39, 41)); FillRect(dc, &seg, rb); DeleteObject(rb);
             }
             if (d.total && d.free) {
                 int w = static_cast<int>((static_cast<long double>(d.free) / d.total) * (bar.right - bar.left));
                 RECT seg{ max(bar.left, bar.right - w), bar.top, bar.right, bar.bottom };
-                HBRUSH fb = CreateSolidBrush(RGB(15, 23, 42)); FillRect(dc, &seg, fb); DeleteObject(fb);
+                HBRUSH fb = CreateSolidBrush(RGB(0, 0, 0)); FillRect(dc, &seg, fb); DeleteObject(fb);
             }
 
-            SetTextColor(dc, RGB(203, 213, 225));
+            SetTextColor(dc, RGB(175, 168, 163));
             const wchar_t* names[] = { L"Apps", L"Videos", L"Pictures", L"Documents", L"Audio", L"System", L"Other" };
             if (d.cacheLoaded) {
                 const int columnWidth = max(1, contentWidth / labelColumns);
@@ -476,6 +579,52 @@ private:
                 DrawTextW(dc, msg.c_str(), -1, &messageRect, DT_LEFT | DT_TOP | DT_WORDBREAK | DT_END_ELLIPSIS);
             }
 
+            if (d.cacheLoaded) {
+                const int iy = layout.intelY;
+                SetTextColor(dc, RGB(216, 160, 168));
+                const wchar_t* intelTitle = L"Storage Intelligence";
+                TextOutW(dc, left + 18, iy, intelTitle, static_cast<int>(wcslen(intelTitle)));
+                SetTextColor(dc, RGB(245, 241, 238));
+                if (contentWidth >= 520) {
+                    const int gap = 18;
+                    const int half = max(1, (contentWidth - gap) / 2);
+                    const int rightX = left + 18 + half + gap;
+                    const wchar_t* fileTitle = L"Largest files";
+                    const wchar_t* folderTitle = L"Largest folders";
+                    TextOutW(dc, left + 18, iy + 24, fileTitle, static_cast<int>(wcslen(fileTitle)));
+                    TextOutW(dc, rightX, iy + 24, folderTitle, static_cast<int>(wcslen(folderTitle)));
+                    SetTextColor(dc, RGB(175, 168, 163));
+                    RECT filesRect{ left + 18, iy + 46, left + 18 + half, iy + 98 };
+                    RECT foldersRect{ rightX, iy + 46, right - 18, iy + 98 };
+                    DrawTextW(dc, (d.topFilesPreview.empty() ? L"No data" : d.topFilesPreview.c_str()), -1, &filesRect, DT_LEFT | DT_TOP | DT_WORDBREAK | DT_END_ELLIPSIS);
+                    DrawTextW(dc, (d.topFoldersPreview.empty() ? L"No data" : d.topFoldersPreview.c_str()), -1, &foldersRect, DT_LEFT | DT_TOP | DT_WORDBREAK | DT_END_ELLIPSIS);
+                    SetTextColor(dc, RGB(255, 138, 0));
+                    const wchar_t* reviewTitle = L"986 Review";
+                    TextOutW(dc, left + 18, iy + 104, reviewTitle, static_cast<int>(wcslen(reviewTitle)));
+                    SetTextColor(dc, RGB(175, 168, 163));
+                    RECT reviewRect{ left + 105, iy + 101, right - 18, iy + 140 };
+                    DrawTextW(dc, (d.recommendationPreview.empty() ? L"Review only; 986 never auto-deletes." : d.recommendationPreview.c_str()), -1, &reviewRect, DT_LEFT | DT_TOP | DT_WORDBREAK | DT_END_ELLIPSIS);
+                } else {
+                    const wchar_t* fileTitle = L"Largest files";
+                    TextOutW(dc, left + 18, iy + 24, fileTitle, static_cast<int>(wcslen(fileTitle)));
+                    SetTextColor(dc, RGB(175, 168, 163));
+                    RECT filesRect{ left + 18, iy + 46, right - 18, iy + 96 };
+                    DrawTextW(dc, (d.topFilesPreview.empty() ? L"No data" : d.topFilesPreview.c_str()), -1, &filesRect, DT_LEFT | DT_TOP | DT_WORDBREAK | DT_END_ELLIPSIS);
+                    SetTextColor(dc, RGB(245, 241, 238));
+                    const wchar_t* folderTitle = L"Largest folders";
+                    TextOutW(dc, left + 18, iy + 102, folderTitle, static_cast<int>(wcslen(folderTitle)));
+                    SetTextColor(dc, RGB(175, 168, 163));
+                    RECT foldersRect{ left + 18, iy + 124, right - 18, iy + 174 };
+                    DrawTextW(dc, (d.topFoldersPreview.empty() ? L"No data" : d.topFoldersPreview.c_str()), -1, &foldersRect, DT_LEFT | DT_TOP | DT_WORDBREAK | DT_END_ELLIPSIS);
+                    SetTextColor(dc, RGB(255, 138, 0));
+                    const wchar_t* reviewTitle = L"986 Review";
+                    TextOutW(dc, left + 18, iy + 180, reviewTitle, static_cast<int>(wcslen(reviewTitle)));
+                    SetTextColor(dc, RGB(175, 168, 163));
+                    RECT reviewRect{ left + 18, iy + 202, right - 18, iy + 230 };
+                    DrawTextW(dc, (d.recommendationPreview.empty() ? L"Review only; 986 never auto-deletes." : d.recommendationPreview.c_str()), -1, &reviewRect, DT_LEFT | DT_TOP | DT_WORDBREAK | DT_END_ELLIPSIS);
+                }
+            }
+
             top += cardH + 18;
         }
         SelectObject(dc, old); DeleteObject(titleFont); DeleteObject(textFont); EndPaint(hwnd, &ps);
@@ -483,6 +632,8 @@ private:
 
     long refs_;
     HWND hwnd_;
+    ULONG_PTR gdiplusToken_;
+    Gdiplus::Image* watermark_;
     FOLDERSETTINGS settings_{};
     std::vector<DriveCard> drives_;
 };

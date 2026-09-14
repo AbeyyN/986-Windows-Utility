@@ -21,6 +21,8 @@ $doctorText = Get-Content $doctor -Raw -Encoding UTF8
 $profilesText = Get-Content $profiles -Raw -Encoding UTF8
 $bootText = Get-Content $bootstrap -Raw -Encoding UTF8
 $changelogText = Get-Content $changelog -Raw -Encoding UTF8
+$resolutionUiText = Get-Content $resolutionUi -Raw -Encoding UTF8
+if ($resolutionUiText -notmatch 'xmlns:x="http://schemas\.microsoft\.com/winfx/2006/xaml"') { throw 'Custom Resolution XAML x namespace missing.' }
 $ids = [regex]::Matches($text,"Id='([^']+)'\s*; Category=") | ForEach-Object { $_.Groups[1].Value }
 if ($ids.Count -ne 34 -or ($ids|Sort-Object -Unique).Count -ne $ids.Count) { throw 'Expected 30 active + 4 legacy unique tweak IDs.' }
 $appVersionMatch = [regex]::Match($text,'\$Version = ''([^'']+)''')

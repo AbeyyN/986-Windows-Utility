@@ -23,6 +23,10 @@ if ($moduleText -notmatch 'Start-986TrialTokenCleanup') { throw 'Trial keep toke
 if ($moduleText -match '\$remaining--') { throw 'Scalar countdown mutation is unsafe inside WPF event scope.' }
 if ($moduleText -notmatch '\$trialState\.Remaining\s*=\s*\[int\]\$trialState\.Remaining\s*-\s*1') { throw 'Scoped mutable resolution countdown guard missing.' }
 if ($moduleText -match 'New-Item -ItemType File -Path \$token -Force \| Out-Null\s*\r?\n\s*Remove-Item \$token') { throw 'Keep token is removed before fallback reverter can observe it.' }
+$ratioDisplay=[pscustomobject]@{ Width=2240; Height=1400 }
+$ratioMode=Get-986AspectLockedResolution -Display $ratioDisplay -Width 3440
+if ($ratioMode.Height -ne 2150 -or $ratioMode.RatioText -ne '8:5') { throw 'Aspect-lock calculation drifted.' }
+
 foreach ($forbidden in '\\EDID','HKLM:','DisplayOverride','OverrideEdidFlags','Register-WmiEvent','ScheduledTask') {
     if ($moduleText -match $forbidden) { throw "Forbidden custom-resolution enforcement/hack found: $forbidden" }
 }

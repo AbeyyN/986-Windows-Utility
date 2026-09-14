@@ -13,6 +13,28 @@ function Test-986ResolutionRequest {
     return $true
 }
 
+function Get-986GreatestCommonDivisor {
+    param([int]$A,[int]$B)
+    $A=[math]::Abs($A); $B=[math]::Abs($B)
+    while ($B -ne 0) { $t=$B; $B=$A % $B; $A=$t }
+    if ($A -eq 0) { return 1 }
+    return $A
+}
+
+function Get-986AspectLockedResolution {
+    param([Parameter(Mandatory=$true)]$Display,[Parameter(Mandatory=$true)][int]$Width)
+    $dw=[int]$Display.Width; $dh=[int]$Display.Height
+    if ($dw -le 0 -or $dh -le 0) { throw 'Selected display has an invalid current aspect ratio.' }
+    $g=Get-986GreatestCommonDivisor -A $dw -B $dh
+    $rw=[int]($dw/$g); $rh=[int]($dh/$g)
+    $height=[int][math]::Round(([double]$Width * [double]$rh / [double]$rw),[MidpointRounding]::AwayFromZero)
+    [pscustomobject]@{
+        Width=$Width; Height=$height; RatioWidth=$rw; RatioHeight=$rh
+        RatioText=("{0}:{1}" -f $rw,$rh)
+        Exact=(($Width * $rh) % $rw -eq 0)
+    }
+}
+
 function Get-986ResolutionProvider {
     param([string]$AdapterName,[string]$AdapterCompatibility)
     $text = (($AdapterName + ' ' + $AdapterCompatibility).Trim()).ToLowerInvariant()
@@ -190,13 +212,16 @@ function Invoke-986ResolutionTrial {
 
     Add-Type -AssemblyName PresentationFramework
     Add-Type -AssemblyName WindowsBase
+    Add-Type -AssemblyName PresentationCore
+    $brush = New-Object Windows.Media.BrushConverter
     $window = New-Object Windows.Window
     $window.Title = '986 Custom Resolution - Keep this mode?'
     $window.Width = 470; $window.Height = 220; $window.WindowStartupLocation = 'CenterScreen'; $window.Topmost = $true
+    $window.Background = $brush.ConvertFromString('#050505'); $window.Foreground = $brush.ConvertFromString('#F5F1EE')
     $grid = New-Object Windows.Controls.Grid
-    $text = New-Object Windows.Controls.TextBlock; $text.Margin='22'; $text.FontSize=18; $text.TextWrapping='Wrap'
-    $keep = New-Object Windows.Controls.Button; $keep.Content='Keep'; $keep.Width=120; $keep.Height=36; $keep.HorizontalAlignment='Left'; $keep.Margin='55,125,0,0'
-    $revert = New-Object Windows.Controls.Button; $revert.Content='Revert'; $revert.Width=120; $revert.Height=36; $revert.HorizontalAlignment='Right'; $revert.Margin='0,125,55,0'
+    $text = New-Object Windows.Controls.TextBlock; $text.Margin='22'; $text.FontSize=18; $text.TextWrapping='Wrap'; $text.Foreground=$brush.ConvertFromString('#F5F1EE')
+    $keep = New-Object Windows.Controls.Button; $keep.Content='Keep'; $keep.Width=120; $keep.Height=36; $keep.HorizontalAlignment='Left'; $keep.Margin='55,125,0,0'; $keep.Background=$brush.ConvertFromString('#C85A00'); $keep.Foreground=$brush.ConvertFromString('#F5F1EE'); $keep.BorderBrush=$brush.ConvertFromString('#FF8A00')
+    $revert = New-Object Windows.Controls.Button; $revert.Content='Revert'; $revert.Width=120; $revert.Height=36; $revert.HorizontalAlignment='Right'; $revert.Margin='0,125,55,0'; $revert.Background=$brush.ConvertFromString('#7A414B'); $revert.Foreground=$brush.ConvertFromString('#F5F1EE'); $revert.BorderBrush=$brush.ConvertFromString('#B76E79')
     $grid.Children.Add($text) | Out-Null; $grid.Children.Add($keep) | Out-Null; $grid.Children.Add($revert) | Out-Null; $window.Content=$grid
     $trialState = [pscustomobject]@{ Choice='timeout'; Remaining=[int]$Seconds }
     $timer = New-Object Windows.Threading.DispatcherTimer; $timer.Interval=[TimeSpan]::FromSeconds(1)

@@ -2,6 +2,81 @@
 
 All notable project changes are documented here.
 
+## [0.8.0] - 2026-09-15
+
+### Added
+- Added the official AbeyyTechXy branding system with centered 30% main-shell watermark and 50% 986 Storage watermark.
+- Added 986 Storage Intelligence P1 with Top 10 largest files, Top 10 largest root folders, compact Top 3 previews and review-only cleanup recommendations.
+- Added per-display aspect-ratio locking for Custom Resolution: Width is user-controlled and Height is calculated automatically/read-only.
+
+### Changed
+- Reworked the WinUtil visual language to Rose Gold + Black + Orange across the main shell, 986 Storage and Custom Resolution surfaces.
+- Improved WPF ComboBox/ComboBoxItem contrast so profile and display dropdowns remain readable in the dark theme.
+- Custom Resolution now clearly states that it is optimized for external monitors and desktop displays while built-in laptop panels may have limited custom-resolution support.
+- Storage Intelligence remains analysis/review-only; no automatic deletion or destructive cleanup behavior is introduced.
+
+### Fixed
+- Fixed the Custom Resolution XAML namespace launch failure.
+- Fixed main watermark z-order so approved branding remains visible without intercepting clicks.
+- Fixed width/height mismatch risk by locking requests to the selected display's original aspect ratio.
+- Fixed drive-root folder aggregation so Storage Intelligence retains absolute paths such as `C:\Users` instead of drive-relative paths.
+
+### Validation
+- Full Windows CI passed after the final root-path fix.
+- Physical AbeyyN986 validation passed for WPF/Resolution tests, Storage scanner/native shell builds, isolated Explorer loading, Storage Intelligence previews, registry restoration and drive-root path regression.
+- Internal Intel laptop panel rejection of unsupported custom modes was verified and no fake/unsafe force bypass is shipped.
+
+## [0.8.0-alpha.5] - 2026-09-14
+
+### Added
+- Added 986 Storage Intelligence P1: scan reports now retain Top 10 largest files, Top 10 largest root folders and review-only cleanup recommendations.
+- 986 Storage cards preview the Top 3 files/folders plus the highest-impact review recommendation without deleting or modifying user data.
+- Custom Resolution now shows the approved 986-style suitability note for external monitors/desktop displays and warns that built-in laptop panels may have limited custom-resolution support.
+
+### Safety
+- Storage Intelligence P1 is analysis-only. No automatic delete, cleanup, registry mutation or file removal action was added.
+
+## [0.8.0-alpha.4] - 2026-09-14
+
+### Changed
+- Custom Resolution now locks each selected display to its current aspect ratio: users enter Width and Height is calculated automatically/read-only.
+- Exact requested modes still pass through the existing driver `CDS_TEST` gate and 15-second reversible trial before any persistent change.
+- Driver-rejected modes now report the exact aspect-locked resolution and an Intel internal-panel limitation note instead of presenting an ineffective force path.
+
+### Fixed
+- Prevents mismatched manual width/height pairs such as 3440x1440 on a 2240x1400 (8:5) display; width 3440 now derives height 2150 automatically.
+
+## [0.8.0-alpha.3] - 2026-09-14
+
+### Fixed
+- Moved the official AbeyyTechXy main-shell watermark onto a click-through overlay layer so the approved 30% logo remains visible above opaque content surfaces.
+- Fixed white-on-white WPF dropdowns by theming ComboBox and ComboBoxItem surfaces, including selected and highlighted states, in both the main profile picker and Custom Resolution display picker.
+
+### Validation
+- Added regression guards for watermark z-order and dark dropdown item styling.
+
+## [0.8.0-alpha.2] - 2026-09-14
+
+### Added
+- Added the approved AbeyyTechXy logo asset to the app package and enabled the existing 30% centered watermark in the main WinUtil shell.
+- Added a centered 50% opacity official-logo watermark to the native 986 Storage view using Windows GDI+, with fail-safe rendering when the asset cannot be loaded.
+
+### Changed
+- Release packaging now requires and includes `assets\AbeyyTechXy-logo.png` so branding cannot silently disappear from published builds.
+
+### Validation
+- Added regression guards for the packaged logo asset, main-shell watermark host, native Storage watermark markers and GDI+ linker dependency.
+
+## [0.8.0-alpha.1] - 2026-09-14
+
+### Fixed
+- Fixed the `986 Custom Resolution` launch failure by declaring the XAML `x` namespace required by named controls.
+
+### Changed
+- Started the `Rose Gold Intelligence` visual system across the main WinUtil shell, Custom Resolution dialog and native 986 Storage view.
+- Added the fail-safe 30% main-shell watermark host for the canonical `assets\AbeyyTechXy-logo.png` brand asset.
+- Recolored 986 Storage to a pure-black base with rose-gold/orange category and action accents.
+
 ## [0.7.0] - 2026-09-13
 
 ### Fixed

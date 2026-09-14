@@ -3,7 +3,7 @@ param([switch]$NoElevation,[switch]$AuditOnly,[switch]$AuditJson,[switch]$Doctor
 Set-StrictMode -Version 3.0
 $ErrorActionPreference = 'Stop'
 $AppName = '986 Windows Utility'
-$Version = '0.7.0'
+$Version = '0.8.0'
 $Root = Split-Path -Parent $MyInvocation.MyCommand.Path
 $StateDir = Join-Path $Root 'state'
 $StateFile = Join-Path $StateDir 'original-state.json'
@@ -234,34 +234,48 @@ if ($DoctorOnly) {
 <Window xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml" Title="986 Windows Utility v$Version"
         Height="780" Width="1120" MinHeight="650" MinWidth="900"
-        Background="#0B1220" Foreground="#E5E7EB" WindowStartupLocation="CenterScreen">
+        Background="#050505" Foreground="#F5F1EE" WindowStartupLocation="CenterScreen">
   <Window.Resources>
     <Style TargetType="Button">
       <Setter Property="Margin" Value="0,0,8,0"/><Setter Property="Padding" Value="12,7"/>
-      <Setter Property="Background" Value="#1F2937"/><Setter Property="Foreground" Value="#F9FAFB"/>
-      <Setter Property="BorderBrush" Value="#374151"/><Setter Property="BorderThickness" Value="1"/>
+      <Setter Property="Background" Value="#171213"/><Setter Property="Foreground" Value="#F5F1EE"/>
+      <Setter Property="BorderBrush" Value="#5A3C40"/><Setter Property="BorderThickness" Value="1"/>
     </Style>
-    <Style TargetType="CheckBox"><Setter Property="Foreground" Value="#F9FAFB"/></Style>
+    <Style TargetType="CheckBox"><Setter Property="Foreground" Value="#F5F1EE"/></Style>
+    <Style TargetType="ComboBox">
+      <Setter Property="Background" Value="#171213"/><Setter Property="Foreground" Value="#F5F1EE"/>
+      <Setter Property="BorderBrush" Value="#B76E79"/><Setter Property="BorderThickness" Value="1"/>
+    </Style>
+    <Style TargetType="ComboBoxItem">
+      <Setter Property="Background" Value="#171213"/><Setter Property="Foreground" Value="#F5F1EE"/>
+      <Setter Property="Padding" Value="8,5"/><Setter Property="HorizontalContentAlignment" Value="Stretch"/>
+      <Style.Triggers>
+        <Trigger Property="IsHighlighted" Value="True"><Setter Property="Background" Value="#7A414B"/></Trigger>
+        <Trigger Property="IsSelected" Value="True"><Setter Property="Background" Value="#B76E79"/><Setter Property="Foreground" Value="#050505"/></Trigger>
+      </Style.Triggers>
+    </Style>
   </Window.Resources>
-  <Grid Margin="18">
+  <Grid>
+    <Image x:Name="BrandWatermark" Panel.ZIndex="50" HorizontalAlignment="Center" VerticalAlignment="Center" Stretch="Uniform" Opacity="0.30" IsHitTestVisible="False" Visibility="Collapsed" MaxWidth="520" MaxHeight="520"/>
+    <Grid Margin="18">
     <Grid.RowDefinitions>
       <RowDefinition Height="Auto"/><RowDefinition Height="Auto"/><RowDefinition Height="*"/>
       <RowDefinition Height="220"/><RowDefinition Height="Auto"/>
     </Grid.RowDefinitions>
     <StackPanel Grid.Row="0" Margin="0,0,0,14">
-      <TextBlock Text="986 WINDOWS UTILITY" FontSize="28" FontWeight="Bold" Foreground="#F59E0B"/>
-      <TextBlock Text="State-aware reversible Windows tuning | AbeyyTechXy" Foreground="#9CA3AF" Margin="0,4,0,0"/>
+      <TextBlock Text="986 WINDOWS UTILITY" FontSize="28" FontWeight="Bold" Foreground="#D8A0A8"/>
+      <TextBlock Text="State-aware reversible Windows tuning | AbeyyTechXy" Foreground="#AFA8A3" Margin="0,4,0,0"/>
     </StackPanel>
-    <Border Grid.Row="1" Background="#111827" BorderBrush="#273244" BorderThickness="1" Padding="10" Margin="0,0,0,10">
+    <Border Grid.Row="1" Background="#0D0D0F" BorderBrush="#3B2729" BorderThickness="1" Padding="10" Margin="0,0,0,10">
       <WrapPanel>
         <Button x:Name="BtnAudit" Content="Audit"/>
         <Button x:Name="BtnIntelligence" Content="Tweak Intelligence"/>
         <Button x:Name="BtnExportAudit" Content="Export Audit"/>
         <Button x:Name="BtnDoctor" Content="986 Doctor"/>
         <Button x:Name="BtnExportDoctor" Content="Export Doctor"/>
-        <Button x:Name="BtnStorage" Content="986 Storage" Background="#1E3A5F"/>
-        <Button x:Name="BtnResolution" Content="Custom Resolution" Background="#4C1D95"/>
-        <ComboBox x:Name="ProfilePicker" Width="180" Margin="0,0,8,0" Padding="8,5" Background="#1F2937" Foreground="#F9FAFB"/>
+        <Button x:Name="BtnStorage" Content="986 Storage" Background="#7A414B" BorderBrush="#B76E79"/>
+        <Button x:Name="BtnResolution" Content="Custom Resolution" Background="#B76E79" BorderBrush="#D8A0A8"/>
+        <ComboBox x:Name="ProfilePicker" Width="180" Margin="0,0,8,0" Padding="8,5" Background="#171213" Foreground="#F5F1EE" BorderBrush="#5A3C40"/>
         <Button x:Name="BtnProfileSelect" Content="Select Profile"/>
         <Button x:Name="BtnProfileSave" Content="Save Custom"/>
         <Button x:Name="BtnProfileDelete" Content="Delete Custom"/>
@@ -271,26 +285,27 @@ if ($DoctorOnly) {
         <Button x:Name="BtnOpenState" Content="Open State Folder"/>
       </WrapPanel>
     </Border>
-    <Border Grid.Row="2" Background="#0F172A" BorderBrush="#273244" BorderThickness="1" Padding="8" Margin="0,0,0,10">
+    <Border Grid.Row="2" Background="#0B0909" BorderBrush="#3B2729" BorderThickness="1" Padding="8" Margin="0,0,0,10">
       <ScrollViewer VerticalScrollBarVisibility="Auto">
         <StackPanel x:Name="TweakPanel"/>
       </ScrollViewer>
     </Border>
-    <Border Grid.Row="3" Background="#050A12" BorderBrush="#273244" BorderThickness="1" Padding="8" Margin="0,0,0,10">
+    <Border Grid.Row="3" Background="#050505" BorderBrush="#3B2729" BorderThickness="1" Padding="8" Margin="0,0,0,10">
       <Grid>
         <Grid.RowDefinitions><RowDefinition Height="Auto"/><RowDefinition Height="*"/></Grid.RowDefinitions>
         <TextBlock Text="Activity log" FontWeight="SemiBold" Margin="2,0,0,6"/>
-        <TextBox x:Name="LogBox" Grid.Row="1" Background="#050A12" Foreground="#D1D5DB" BorderThickness="0"
+        <TextBox x:Name="LogBox" Grid.Row="1" Background="#050505" Foreground="#F5F1EE" BorderThickness="0"
                  IsReadOnly="True" AcceptsReturn="True" VerticalScrollBarVisibility="Auto" FontFamily="Consolas" FontSize="12"/>
       </Grid>
     </Border>
     <Grid Grid.Row="4">
       <Grid.ColumnDefinitions><ColumnDefinition Width="*"/><ColumnDefinition Width="Auto"/></Grid.ColumnDefinitions>
-      <TextBlock Text="Preferences are applied once only. 986 never locks or auto-reapplies them. Undo requires an original snapshot." Foreground="#9CA3AF" VerticalAlignment="Center"/>
+      <TextBlock Text="Preferences are applied once only. 986 never locks or auto-reapplies them. Undo requires an original snapshot." Foreground="#AFA8A3" VerticalAlignment="Center"/>
       <StackPanel Grid.Column="1" Orientation="Horizontal">
-        <Button x:Name="BtnUndo" Content="Undo Selected" Background="#3F1D2E"/>
-        <Button x:Name="BtnApply" Content="Apply Selected" Background="#92400E"/>
+        <Button x:Name="BtnUndo" Content="Undo Selected" Background="#5A2330" BorderBrush="#B76E79"/>
+        <Button x:Name="BtnApply" Content="Apply Selected" Background="#C85A00" BorderBrush="#FF8A00"/>
       </StackPanel>
+    </Grid>
     </Grid>
   </Grid>
 </Window>
@@ -299,6 +314,18 @@ if ($DoctorOnly) {
 $reader = New-Object System.Xml.XmlNodeReader $Xaml
 $Window = [Windows.Markup.XamlReader]::Load($reader)
 $script:LogBox = $Window.FindName('LogBox')
+$BrandWatermark = $Window.FindName('BrandWatermark')
+$BrandLogoPath = Join-Path $Root 'assets\AbeyyTechXy-logo.png'
+if ($BrandWatermark -and (Test-Path $BrandLogoPath)) {
+    $bitmap = New-Object Windows.Media.Imaging.BitmapImage
+    $bitmap.BeginInit()
+    $bitmap.CacheOption = [Windows.Media.Imaging.BitmapCacheOption]::OnLoad
+    $bitmap.UriSource = [Uri]$BrandLogoPath
+    $bitmap.EndInit()
+    $bitmap.Freeze()
+    $BrandWatermark.Source = $bitmap
+    $BrandWatermark.Visibility = [Windows.Visibility]::Visible
+}
 $TweakPanel = $Window.FindName('TweakPanel')
 $BtnAudit = $Window.FindName('BtnAudit')
 $BtnIntelligence = $Window.FindName('BtnIntelligence')
@@ -326,14 +353,14 @@ foreach ($legacy in $LegacyTweaks) {
 
 function New-TweakRow($Tweak) {
     $border = New-Object Windows.Controls.Border
-    $border.BorderBrush = '#1F2937'; $border.BorderThickness = [Windows.Thickness]::new(0,0,0,1); $border.Padding = [Windows.Thickness]::new(6)
+    $border.BorderBrush = '#3B2729'; $border.BorderThickness = [Windows.Thickness]::new(0,0,0,1); $border.Padding = [Windows.Thickness]::new(6)
     $grid = New-Object Windows.Controls.Grid
     foreach ($w in @('42','120','*','80','130')) {
         $c = New-Object Windows.Controls.ColumnDefinition; $c.Width = $w; $grid.ColumnDefinitions.Add($c)
     }
     $check = New-Object Windows.Controls.CheckBox; $check.VerticalAlignment = 'Center'
     [Windows.Controls.Grid]::SetColumn($check,0); $grid.Children.Add($check) | Out-Null
-    $cat = New-Object Windows.Controls.TextBlock; $cat.Text = $Tweak.Category; $cat.Foreground = '#93C5FD'; $cat.VerticalAlignment = 'Center'
+    $cat = New-Object Windows.Controls.TextBlock; $cat.Text = $Tweak.Category; $cat.Foreground = '#D8A0A8'; $cat.VerticalAlignment = 'Center'
     [Windows.Controls.Grid]::SetColumn($cat,1); $grid.Children.Add($cat) | Out-Null
     $name = New-Object Windows.Controls.TextBlock; $name.Text = $Tweak.Name; $name.VerticalAlignment = 'Center'
     [Windows.Controls.Grid]::SetColumn($name,2); $grid.Children.Add($name) | Out-Null
@@ -361,7 +388,7 @@ function Refresh-TweakStatus {
             $row.Status.Foreground = '#FBBF24'
         } else {
             $row.Status.Text = if ($state.ContainsKey($t.Id)) { 'CHANGED | UNDO' } else { 'NOT ACTIVE' }
-            $row.Status.Foreground = '#9CA3AF'
+            $row.Status.Foreground = '#AFA8A3'
         }
     }
 }
