@@ -2,6 +2,15 @@
 
 All notable project changes are documented here.
 
+## [0.8.0-alpha.3] - 2026-09-14
+
+### Fixed
+- Moved the official AbeyyTechXy main-shell watermark onto a click-through overlay layer so the approved 30% logo remains visible above opaque content surfaces.
+- Fixed white-on-white WPF dropdowns by theming ComboBox and ComboBoxItem surfaces, including selected and highlighted states, in both the main profile picker and Custom Resolution display picker.
+
+### Validation
+- Added regression guards for watermark z-order and dark dropdown item styling.
+
 ## [0.8.0-alpha.2] - 2026-09-14
 
 ### Added

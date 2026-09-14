@@ -21,6 +21,8 @@ foreach ($handler in '$BtnProfileSelect.Add_Click','$BtnProfileSave.Add_Click','
 }
 if ($text -notmatch [regex]::Escape('986 never locks or auto-reapplies them')) { throw 'Never-Lock user message missing from GUI.' }
 if ($text -notmatch 'x:Name="BrandWatermark"[^>]+Opacity="0\.30"') { throw 'Main-shell 30% brand watermark host missing.' }
+if ($text -notmatch 'x:Name="BrandWatermark"[^>]+Panel\.ZIndex="50"') { throw 'Main-shell watermark must render above opaque content layers.' }
+if ($text -notmatch 'Style TargetType="ComboBoxItem"') { throw 'Dark ComboBoxItem popup theme missing.' }
 if ($text -notmatch [regex]::Escape("assets\AbeyyTechXy-logo.png")) { throw 'Canonical AbeyyTechXy logo path missing from main shell.' }
 $brandAsset = Join-Path $root 'assets\AbeyyTechXy-logo.png'
 if (-not (Test-Path $brandAsset)) { throw 'Canonical AbeyyTechXy logo asset missing.' }

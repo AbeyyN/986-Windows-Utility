@@ -3,7 +3,7 @@ param([switch]$NoElevation,[switch]$AuditOnly,[switch]$AuditJson,[switch]$Doctor
 Set-StrictMode -Version 3.0
 $ErrorActionPreference = 'Stop'
 $AppName = '986 Windows Utility'
-$Version = '0.8.0-alpha.2'
+$Version = '0.8.0-alpha.3'
 $Root = Split-Path -Parent $MyInvocation.MyCommand.Path
 $StateDir = Join-Path $Root 'state'
 $StateFile = Join-Path $StateDir 'original-state.json'
@@ -242,9 +242,21 @@ if ($DoctorOnly) {
       <Setter Property="BorderBrush" Value="#5A3C40"/><Setter Property="BorderThickness" Value="1"/>
     </Style>
     <Style TargetType="CheckBox"><Setter Property="Foreground" Value="#F5F1EE"/></Style>
+    <Style TargetType="ComboBox">
+      <Setter Property="Background" Value="#171213"/><Setter Property="Foreground" Value="#F5F1EE"/>
+      <Setter Property="BorderBrush" Value="#B76E79"/><Setter Property="BorderThickness" Value="1"/>
+    </Style>
+    <Style TargetType="ComboBoxItem">
+      <Setter Property="Background" Value="#171213"/><Setter Property="Foreground" Value="#F5F1EE"/>
+      <Setter Property="Padding" Value="8,5"/><Setter Property="HorizontalContentAlignment" Value="Stretch"/>
+      <Style.Triggers>
+        <Trigger Property="IsHighlighted" Value="True"><Setter Property="Background" Value="#7A414B"/></Trigger>
+        <Trigger Property="IsSelected" Value="True"><Setter Property="Background" Value="#B76E79"/><Setter Property="Foreground" Value="#050505"/></Trigger>
+      </Style.Triggers>
+    </Style>
   </Window.Resources>
   <Grid>
-    <Image x:Name="BrandWatermark" HorizontalAlignment="Center" VerticalAlignment="Center" Stretch="Uniform" Opacity="0.30" IsHitTestVisible="False" Visibility="Collapsed" MaxWidth="520" MaxHeight="520"/>
+    <Image x:Name="BrandWatermark" Panel.ZIndex="50" HorizontalAlignment="Center" VerticalAlignment="Center" Stretch="Uniform" Opacity="0.30" IsHitTestVisible="False" Visibility="Collapsed" MaxWidth="520" MaxHeight="520"/>
     <Grid Margin="18">
     <Grid.RowDefinitions>
       <RowDefinition Height="Auto"/><RowDefinition Height="Auto"/><RowDefinition Height="*"/>
