@@ -2,6 +2,23 @@
 
 All notable project changes are documented here.
 
+## [0.8.1] - 2026-09-15
+
+### Added
+- Added Storage Intelligence P2 with live scan progress, scoped Cancel Scan, cache age/state, safe review actions and report export.
+- Added 986 Update Center using the existing checksum-verified stable-release bootstrap path.
+
+### Changed
+- Fixed the native 986 Storage official-logo composition so branding remains visible above card surfaces.
+- Locked the user-approved 986 Storage watermark opacity at 25%; the main WinUtil watermark remains 30%.
+
+### Safety
+- Storage review/export remains non-destructive; no automatic file deletion was added.
+- Update Center blocks in-place update while the current 986 Storage DLL is loaded and never force-restarts Explorer.
+
+### Validation
+- Windows CI, native Storage build, real C:\ scan progress/cancel validation, Update Center loaded-DLL blocking, and isolated Explorer preview validation passed before stable promotion.
+
 ## [0.8.1-alpha.6] - 2026-09-15
 
 ### Changed
