@@ -2,6 +2,14 @@
 
 All notable project changes are documented here.
 
+## [0.8.1-alpha.4] - 2026-09-15
+
+### Added
+- Added `Export Report` to 986 Storage cards. The current read-only scan cache is copied to the user Documents folder as a timestamped JSON report.
+
+### Safety
+- Export never deletes, moves or rewrites scanned user files; it only copies the existing 986 cache JSON.
+
 ## [0.8.1-alpha.3] - 2026-09-15
 
 ### Added

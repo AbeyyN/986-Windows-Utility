@@ -4,6 +4,7 @@
 #include <shlobj.h>
 #include <shobjidl.h>
 #include <shellapi.h>
+#include <knownfolders.h>
 #include <new>
 #include <vector>
 #include <string>
@@ -51,6 +52,7 @@ struct CardLayout {
     RECT openFileAction{};
     RECT openFolderAction{};
     RECT reviewAction{};
+    RECT exportAction{};
     int contentWidth = 0;
     int labelColumns = 1;
     int labelRows = 1;
@@ -73,18 +75,21 @@ static CardLayout BuildCardLayout(const RECT& client, int top, bool intelligence
     layout.intelY = layout.labelY + layout.labelRows * 25 + 10;
     layout.intelHeight = intelligence ? (layout.contentWidth >= 520 ? 190 : 335) : 0;
     if (intelligence) {
-        if (layout.contentWidth >= 520) {
+        if (layout.contentWidth >= 620) {
             const int gap = 8;
-            const int actionWidth = max(90, (layout.contentWidth - 2 * gap) / 3);
+            const int actionWidth = max(86, (layout.contentWidth - 3 * gap) / 4);
             const int actionY = layout.intelY + 150;
             layout.openFileAction = RECT{ left + 18, actionY, left + 18 + actionWidth, actionY + 28 };
             layout.openFolderAction = RECT{ layout.openFileAction.right + gap, actionY, layout.openFileAction.right + gap + actionWidth, actionY + 28 };
-            layout.reviewAction = RECT{ layout.openFolderAction.right + gap, actionY, right - 18, actionY + 28 };
+            layout.reviewAction = RECT{ layout.openFolderAction.right + gap, actionY, layout.openFolderAction.right + gap + actionWidth, actionY + 28 };
+            layout.exportAction = RECT{ layout.reviewAction.right + gap, actionY, right - 18, actionY + 28 };
         } else {
             const int actionY = layout.intelY + 235;
             layout.openFileAction = RECT{ left + 18, actionY, right - 18, actionY + 26 };
             layout.openFolderAction = RECT{ left + 18, actionY + 31, right - 18, actionY + 57 };
             layout.reviewAction = RECT{ left + 18, actionY + 62, right - 18, actionY + 88 };
+            layout.exportAction = RECT{ left + 18, actionY + 93, right - 18, actionY + 119 };
+            layout.intelHeight += 31;
         }
     }
     layout.buttonTop = layout.intelY + layout.intelHeight + 8;
@@ -603,6 +608,23 @@ private:
         }
     }
 
+    bool ExportReport(const DriveCard& d) {
+        std::wstring source = CachePath(d.root);
+        if (GetFileAttributesW(source.c_str()) == INVALID_FILE_ATTRIBUTES) return false;
+        PWSTR documents = nullptr;
+        HRESULT hr = SHGetKnownFolderPath(FOLDERID_Documents, KF_FLAG_CREATE, nullptr, &documents);
+        if (FAILED(hr) || !documents) return false;
+        SYSTEMTIME st{}; GetLocalTime(&st);
+        wchar_t name[128]{};
+        swprintf_s(name, L"986-Storage-%c-%04u%02u%02u-%02u%02u%02u.json", d.root.empty() ? L'X' : d.root[0], st.wYear, st.wMonth, st.wDay, st.wHour, st.wMinute, st.wSecond);
+        std::wstring destination = documents; CoTaskMemFree(documents);
+        destination += L"\\"; destination += name;
+        if (!CopyFileW(source.c_str(), destination.c_str(), FALSE)) return false;
+        std::wstring message = L"Storage report exported to:\n" + destination;
+        MessageBoxW(hwnd_, message.c_str(), L"986 Storage", MB_OK | MB_ICONINFORMATION);
+        return true;
+    }
+
     void Click(int x, int y) {
         POINT p{ x, y };
         RECT client{};
@@ -614,6 +636,7 @@ private:
                 if (PtInRect(&layout.openFileAction, p) && !d.topFile1Path.empty()) { OpenExplorerTarget(d.topFile1Path, true); return; }
                 if (PtInRect(&layout.openFolderAction, p) && !d.topFolder1Path.empty()) { OpenExplorerTarget(d.topFolder1Path, false); return; }
                 if (PtInRect(&layout.reviewAction, p) && !d.recommendationPath.empty()) { OpenExplorerTarget(d.recommendationPath, true); return; }
+                if (PtInRect(&layout.exportAction, p)) { ExportReport(d); return; }
             }
             top += layout.cardHeight + 18;
         }
@@ -774,6 +797,7 @@ private:
                 DrawActionChip(dc, layout.openFileAction, L"Open #1 File", !d.topFile1Path.empty(), false);
                 DrawActionChip(dc, layout.openFolderAction, L"Open #1 Folder", !d.topFolder1Path.empty(), false);
                 DrawActionChip(dc, layout.reviewAction, L"Review", !d.recommendationPath.empty(), true);
+                DrawActionChip(dc, layout.exportAction, L"Export Report", true, false);
             }
 
             top += cardH + 18;
