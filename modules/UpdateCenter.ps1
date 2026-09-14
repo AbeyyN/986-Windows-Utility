@@ -42,7 +42,7 @@ function Start-986VerifiedUpdate {
     param(
         [Parameter(Mandatory)][string]$Root,
         [Parameter(Mandatory)][string]$CurrentVersion,
-        [Windows.Window]$OwnerWindow
+        [object]$OwnerWindow
     )
     $storageDll = Join-Path $Root 'storage\bin\986StorageShell.dll'
     if ((Test-Path $storageDll) -and (Test-986StorageShellLoaded -DllPath $storageDll)) {
@@ -67,7 +67,7 @@ function Show-986UpdateCenter {
     param(
         [Parameter(Mandatory)][string]$CurrentVersion,
         [Parameter(Mandatory)][string]$Root,
-        [Windows.Window]$OwnerWindow
+        [object]$OwnerWindow
     )
     Add-Type -AssemblyName PresentationFramework
     Add-Type -AssemblyName PresentationCore

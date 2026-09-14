@@ -2,6 +2,11 @@
 
 All notable project changes are documented here.
 
+## [0.8.1-alpha.5] - 2026-09-15
+
+### Fixed
+- Hardened 986 Update Center owner-window parameters so the module can be loaded/tested independently before WPF assemblies are initialized.
+
 ## [0.8.1-alpha.4] - 2026-09-15
 
 ### Added

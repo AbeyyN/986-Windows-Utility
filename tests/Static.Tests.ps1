@@ -21,6 +21,7 @@ $auditText = Get-Content $audit -Raw -Encoding UTF8
 $doctorText = Get-Content $doctor -Raw -Encoding UTF8
 $profilesText = Get-Content $profiles -Raw -Encoding UTF8
 $updateText = Get-Content $update -Raw -Encoding UTF8
+if ($updateText -match '\[Windows\.Window\]\$OwnerWindow') { throw 'Update Center must not require WPF owner types at module-load time.' }
 $bootText = Get-Content $bootstrap -Raw -Encoding UTF8
 $changelogText = Get-Content $changelog -Raw -Encoding UTF8
 $resolutionUiText = Get-Content $resolutionUi -Raw -Encoding UTF8
