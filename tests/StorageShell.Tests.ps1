@@ -35,4 +35,8 @@ foreach ($marker in 'TopFilesPreview','TopFoldersPreview','RecommendationPreview
     if ($cppText -notmatch [regex]::Escape($marker)) { throw "Missing Storage Intelligence UI marker: $marker" }
 }
 if ($cppText -match 'SHFileOperation|IFileOperation|RemoveDirectoryW') { throw 'Storage Intelligence P1 must remain review-only.' }
+if ($cppText -notmatch [regex]::Escape('DrawCardBackgrounds(dc, client);')) { throw '986 Storage two-pass card background render is missing.' }
+$cardLayerCall = $cppText.IndexOf('DrawCardBackgrounds(dc, client);')
+$watermarkCall = $cppText.IndexOf('DrawBrandWatermark(dc, client);')
+if ($cardLayerCall -lt 0 -or $watermarkCall -lt 0 -or $cardLayerCall -ge $watermarkCall) { throw '986 Storage watermark must render after card backgrounds so the 50% logo remains visible.' }
 Write-Host 'PASS: Storage shell CLSID, COM surface and no-self-registration contract validated.' -ForegroundColor Green

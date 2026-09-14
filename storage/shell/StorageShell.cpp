@@ -496,10 +496,24 @@ private:
         }
     }
 
+    void DrawCardBackgrounds(HDC dc, const RECT& client) {
+        int top = 88;
+        for (auto& d : drives_) {
+            CardLayout layout = BuildCardLayout(client, top, d.cacheLoaded);
+            HBRUSH cardBrush = CreateSolidBrush(RGB(18, 14, 15));
+            FillRect(dc, &layout.card, cardBrush);
+            DeleteObject(cardBrush);
+            top += layout.cardHeight + 18;
+        }
+    }
+
     void Paint(HWND hwnd) {
         PAINTSTRUCT ps{}; HDC dc = BeginPaint(hwnd, &ps);
         RECT client{}; GetClientRect(hwnd, &client);
         HBRUSH bg = CreateSolidBrush(RGB(0, 0, 0)); FillRect(dc, &client, bg); DeleteObject(bg);
+        // Two-pass composition: opaque card surfaces first, then the 50% brand watermark,
+        // then all text/bars/buttons. This keeps the official logo visible without obscuring content.
+        DrawCardBackgrounds(dc, client);
         DrawBrandWatermark(dc, client);
         SetBkMode(dc, TRANSPARENT); SetTextColor(dc, RGB(216, 160, 168));
         HFONT titleFont = CreateFontW(24, 0, 0, 0, FW_SEMIBOLD, FALSE, FALSE, FALSE, DEFAULT_CHARSET, 0, 0, CLEARTYPE_QUALITY, 0, L"Segoe UI");
@@ -521,7 +535,6 @@ private:
             const int labelY = layout.labelY;
             const int buttonTop = layout.buttonTop;
             const int cardH = layout.cardHeight;
-            HBRUSH cardBrush = CreateSolidBrush(RGB(18, 14, 15)); FillRect(dc, &layout.card, cardBrush); DeleteObject(cardBrush);
             wchar_t header[128]{};
             std::wstring freeText = FormatGb(d.free), totalText = FormatGb(d.total);
             swprintf_s(header, L"%c:    %s free of %s", d.root[0], freeText.c_str(), totalText.c_str());

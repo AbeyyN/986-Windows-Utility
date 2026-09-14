@@ -3,7 +3,7 @@ param([switch]$NoElevation,[switch]$AuditOnly,[switch]$AuditJson,[switch]$Doctor
 Set-StrictMode -Version 3.0
 $ErrorActionPreference = 'Stop'
 $AppName = '986 Windows Utility'
-$Version = '0.8.0'
+$Version = '0.8.1-alpha.1'
 $Root = Split-Path -Parent $MyInvocation.MyCommand.Path
 $StateDir = Join-Path $Root 'state'
 $StateFile = Join-Path $StateDir 'original-state.json'
@@ -448,7 +448,7 @@ $BtnStorage.Add_Click({
             if ($choice -eq [Windows.MessageBoxResult]::Yes) { Start-Process explorer.exe -ArgumentList ('shell:::' + $StorageClsid) }
             elseif ($choice -eq [Windows.MessageBoxResult]::No) { [void](& $StorageRegScript -Action Remove); Write-AppLog '986 STORAGE disabled and unregistered' }
         } else {
-            if (-not (Test-Path $StorageShellDll)) { throw '986StorageShell.dll is missing. Install the complete v0.7 package.' }
+            if (-not (Test-Path $StorageShellDll)) { throw '986StorageShell.dll is missing. Install the complete current package.' }
             [void](& $StorageRegScript -Action Install -DllPath $StorageShellDll)
             Write-AppLog '986 STORAGE enabled under This PC'
             Start-Process explorer.exe -ArgumentList ('shell:::' + $StorageClsid)
@@ -512,5 +512,5 @@ Refresh-ProfilePicker '986 Balanced'
 Select-986Profile '986 Balanced'
 Write-AppLog "$AppName v$Version started | Admin=$(Test-IsAdministrator) | Host=$env:COMPUTERNAME"
 Write-AppLog "Baseline loaded. Preferences remain user-editable; 986 does not auto-reapply after Apply Selected."
-Write-AppLog 'v0.7 optional features: 986 Storage and Custom Resolution use explicit enable/trial actions only.'
+Write-AppLog '986 optional features: 986 Storage and Custom Resolution use explicit enable/trial actions only.'
 [void]$Window.ShowDialog()

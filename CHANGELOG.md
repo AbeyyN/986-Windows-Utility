@@ -2,6 +2,15 @@
 
 All notable project changes are documented here.
 
+## [0.8.1-alpha.1] - 2026-09-15
+
+### Fixed
+- Fixed the 986 Storage official-logo watermark being hidden behind opaque drive cards by switching the native view to two-pass composition: card surfaces render first, the approved 50% watermark renders second, and all readable content renders last.
+- Removed stale v0.7 wording from current-package Storage/runtime messages.
+
+### Validation
+- Added a regression guard that requires Storage card backgrounds to render before the official watermark call.
+
 ## [0.8.0] - 2026-09-15
 
 ### Added
