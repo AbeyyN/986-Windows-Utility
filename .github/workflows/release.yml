@@ -68,7 +68,7 @@ jobs:
           $pkg = Join-Path $stageRoot $pkgName
           if (Test-Path $stageRoot) { Remove-Item $stageRoot -Recurse -Force }
           New-Item -ItemType Directory -Path $pkg -Force | Out-Null
-          foreach ($dir in @('modules','display','storage\registration','storage\bin','docs')) {
+          foreach ($dir in @('modules','display','storage\registration','storage\bin','docs','assets')) {
             New-Item -ItemType Directory -Path (Join-Path $pkg $dir) -Force | Out-Null
           }
 
@@ -77,6 +77,8 @@ jobs:
           Copy-Item .\display\ResolutionManager.ps1,.\display\ResolutionUi.ps1 -Destination (Join-Path $pkg 'display')
           Copy-Item .\storage\registration\Register-StorageView.ps1 -Destination (Join-Path $pkg 'storage\registration')
           Copy-Item .\docs\*.md -Destination (Join-Path $pkg 'docs')
+          if (-not (Test-Path .\assets\AbeyyTechXy-logo.png)) { throw 'Canonical AbeyyTechXy logo asset missing.' }
+          Copy-Item .\assets\AbeyyTechXy-logo.png -Destination (Join-Path $pkg 'assets\AbeyyTechXy-logo.png')
 
           $displayBuild = & .\display\Build-ResolutionHelper.ps1 -OutputDir (Join-Path $env:RUNNER_TEMP '986-display-build')
           if (-not (Test-Path $displayBuild.Helper)) { throw '986ResolutionHelper.exe was not produced.' }
@@ -105,7 +107,8 @@ jobs:
             'display\986ResolutionHelper.exe',
             'storage\bin\986StorageShell.dll',
             'storage\bin\986StorageScanner.exe',
-            'storage\registration\Register-StorageView.ps1'
+            'storage\registration\Register-StorageView.ps1',
+            'assets\AbeyyTechXy-logo.png'
           )) {
             if (-not (Test-Path (Join-Path $verifyPkg $required))) { throw "Release package missing $required" }
           }

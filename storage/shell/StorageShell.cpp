@@ -7,6 +7,7 @@
 #include <vector>
 #include <string>
 #include <algorithm>
+#include <gdiplus.h>
 #include "StorageGuids.h"
 
 static HINSTANCE g_instance = nullptr;
@@ -177,8 +178,8 @@ static COLORREF SegmentColor(size_t index) {
 
 class StorageView final : public IShellView {
 public:
-    StorageView() : refs_(1), hwnd_(nullptr) { ModuleAddRef(); EnumerateDrives(); }
-    ~StorageView() { if (hwnd_) DestroyWindow(hwnd_); ModuleRelease(); }
+    StorageView() : refs_(1), hwnd_(nullptr), gdiplusToken_(0), watermark_(nullptr) { ModuleAddRef(); LoadBrandWatermark(); EnumerateDrives(); }
+    ~StorageView() { if (hwnd_) DestroyWindow(hwnd_); delete watermark_; if (gdiplusToken_) Gdiplus::GdiplusShutdown(gdiplusToken_); ModuleRelease(); }
 
     IFACEMETHODIMP QueryInterface(REFIID riid, void** ppv) override {
         if (!ppv) return E_POINTER;
@@ -234,6 +235,30 @@ public:
     IFACEMETHODIMP GetItemObject(UINT, REFIID, void**) override { return E_NOINTERFACE; }
 
 private:
+    void LoadBrandWatermark() {
+        Gdiplus::GdiplusStartupInput input;
+        if (Gdiplus::GdiplusStartup(&gdiplusToken_, &input, nullptr) != Gdiplus::Ok) { gdiplusToken_ = 0; return; }
+        std::wstring path = ModuleDirectory() + L"\\..\\..\\assets\\AbeyyTechXy-logo.png";
+        watermark_ = Gdiplus::Image::FromFile(path.c_str(), FALSE);
+        if (!watermark_ || watermark_->GetLastStatus() != Gdiplus::Ok) { delete watermark_; watermark_ = nullptr; }
+    }
+
+    void DrawBrandWatermark(HDC dc, const RECT& client) {
+        if (!watermark_) return;
+        const UINT iw = watermark_->GetWidth(), ih = watermark_->GetHeight();
+        if (!iw || !ih) return;
+        const int cw = max(1, client.right - client.left), ch = max(1, client.bottom - client.top);
+        const double scale = min((cw * 0.55) / static_cast<double>(iw), (ch * 0.55) / static_cast<double>(ih));
+        const int w = max(1, static_cast<int>(iw * scale)), h = max(1, static_cast<int>(ih * scale));
+        const int x = client.left + (cw - w) / 2, y = client.top + (ch - h) / 2;
+        Gdiplus::ColorMatrix matrix = { 1,0,0,0,0, 0,1,0,0,0, 0,0,1,0,0, 0,0,0,0.50f,0, 0,0,0,0,1 };
+        Gdiplus::ImageAttributes attrs;
+        attrs.SetColorMatrix(&matrix, Gdiplus::ColorMatrixFlagsDefault, Gdiplus::ColorAdjustTypeBitmap);
+        Gdiplus::Graphics graphics(dc);
+        graphics.SetInterpolationMode(Gdiplus::InterpolationModeHighQualityBicubic);
+        graphics.DrawImage(watermark_, Gdiplus::Rect(x, y, w, h), 0, 0, iw, ih, Gdiplus::UnitPixel, &attrs);
+    }
+
     static LRESULT CALLBACK WndProc(HWND hwnd, UINT msg, WPARAM wp, LPARAM lp) {
         StorageView* self = reinterpret_cast<StorageView*>(GetWindowLongPtrW(hwnd, GWLP_USERDATA));
         if (msg == WM_NCCREATE) {
@@ -399,6 +424,7 @@ private:
         PAINTSTRUCT ps{}; HDC dc = BeginPaint(hwnd, &ps);
         RECT client{}; GetClientRect(hwnd, &client);
         HBRUSH bg = CreateSolidBrush(RGB(0, 0, 0)); FillRect(dc, &client, bg); DeleteObject(bg);
+        DrawBrandWatermark(dc, client);
         SetBkMode(dc, TRANSPARENT); SetTextColor(dc, RGB(216, 160, 168));
         HFONT titleFont = CreateFontW(24, 0, 0, 0, FW_SEMIBOLD, FALSE, FALSE, FALSE, DEFAULT_CHARSET, 0, 0, CLEARTYPE_QUALITY, 0, L"Segoe UI");
         HFONT textFont = CreateFontW(17, 0, 0, 0, FW_NORMAL, FALSE, FALSE, FALSE, DEFAULT_CHARSET, 0, 0, CLEARTYPE_QUALITY, 0, L"Segoe UI");
@@ -484,6 +510,8 @@ private:
 
     long refs_;
     HWND hwnd_;
+    ULONG_PTR gdiplusToken_;
+    Gdiplus::Image* watermark_;
     FOLDERSETTINGS settings_{};
     std::vector<DriveCard> drives_;
 };

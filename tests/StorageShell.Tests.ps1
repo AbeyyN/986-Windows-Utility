@@ -26,4 +26,9 @@ foreach ($marker in 'QuoteCommandLineArg','QuoteCommandLineArg(scanner)','QuoteC
     if ($cppText -notmatch [regex]::Escape($marker)) { throw "Missing safe scanner command-line marker: $marker" }
 }
 if ($cppText -match [regex]::Escape('L"\\" " + d.root')) { throw 'Drive roots must not use naive quoted trailing-backslash command-line construction.' }
+foreach ($marker in '#include <gdiplus.h>','LoadBrandWatermark','DrawBrandWatermark','AbeyyTechXy-logo.png','0.50f','DrawBrandWatermark(dc, client)') {
+    if ($cppText -notmatch [regex]::Escape($marker)) { throw "Missing 986 Storage 50% brand watermark marker: $marker" }
+}
+$buildText = Get-Content (Join-Path $root 'storage\Build-StorageView.ps1') -Raw -Encoding UTF8
+if ($buildText -notmatch [regex]::Escape('gdiplus.lib')) { throw '986 Storage watermark requires GDI+ linker input.' }
 Write-Host 'PASS: Storage shell CLSID, COM surface and no-self-registration contract validated.' -ForegroundColor Green

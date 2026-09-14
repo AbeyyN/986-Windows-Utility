@@ -22,6 +22,8 @@ foreach ($handler in '$BtnProfileSelect.Add_Click','$BtnProfileSave.Add_Click','
 if ($text -notmatch [regex]::Escape('986 never locks or auto-reapplies them')) { throw 'Never-Lock user message missing from GUI.' }
 if ($text -notmatch 'x:Name="BrandWatermark"[^>]+Opacity="0\.30"') { throw 'Main-shell 30% brand watermark host missing.' }
 if ($text -notmatch [regex]::Escape("assets\AbeyyTechXy-logo.png")) { throw 'Canonical AbeyyTechXy logo path missing from main shell.' }
+$brandAsset = Join-Path $root 'assets\AbeyyTechXy-logo.png'
+if (-not (Test-Path $brandAsset)) { throw 'Canonical AbeyyTechXy logo asset missing.' }
 
 $window.Close()
 Write-Host 'PASS: v0.8 alpha WPF loads, Storage/Resolution controls are wired, and Never-Lock message is present.' -ForegroundColor Green

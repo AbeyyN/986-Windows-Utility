@@ -2,6 +2,18 @@
 
 All notable project changes are documented here.
 
+## [0.8.0-alpha.2] - 2026-09-14
+
+### Added
+- Added the approved AbeyyTechXy logo asset to the app package and enabled the existing 30% centered watermark in the main WinUtil shell.
+- Added a centered 50% opacity official-logo watermark to the native 986 Storage view using Windows GDI+, with fail-safe rendering when the asset cannot be loaded.
+
+### Changed
+- Release packaging now requires and includes `assets\AbeyyTechXy-logo.png` so branding cannot silently disappear from published builds.
+
+### Validation
+- Added regression guards for the packaged logo asset, main-shell watermark host, native Storage watermark markers and GDI+ linker dependency.
+
 ## [0.8.0-alpha.1] - 2026-09-14
 
 ### Fixed
@@ -11,9 +23,6 @@ All notable project changes are documented here.
 - Started the `Rose Gold Intelligence` visual system across the main WinUtil shell, Custom Resolution dialog and native 986 Storage view.
 - Added the fail-safe 30% main-shell watermark host for the canonical `assets\AbeyyTechXy-logo.png` brand asset.
 - Recolored 986 Storage to a pure-black base with rose-gold/orange category and action accents.
-
-### Pending
-- 986 Storage 50% official-logo watermark is still pending import of the exact approved logo asset; no substitute logo is used.
 
 ## [0.7.0] - 2026-09-13
 
