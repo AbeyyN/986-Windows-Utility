@@ -30,7 +30,7 @@ function Show-986ResolutionWindow {
   <Grid.RowDefinitions><RowDefinition Height="Auto"/><RowDefinition Height="Auto"/><RowDefinition Height="Auto"/><RowDefinition Height="Auto"/><RowDefinition Height="Auto"/><RowDefinition Height="*"/></Grid.RowDefinitions>
   <TextBlock Text="986 CUSTOM RESOLUTION" FontSize="24" FontWeight="Bold" Foreground="#D8A0A8"/>
   <StackPanel Grid.Row="1" Margin="0,16,0,0"><TextBlock Text="Display"/><ComboBox x:Name="DisplayPicker" Height="32" Margin="0,4,0,0"/></StackPanel>
-  <StackPanel Grid.Row="2" Margin="0,14,0,0"><TextBlock x:Name="CurrentText" Foreground="#AFA8A3"/><TextBlock x:Name="RatioText" Margin="0,4,0,0" Foreground="#D8A0A8"/></StackPanel>
+  <StackPanel Grid.Row="2" Margin="0,14,0,0"><TextBlock x:Name="CurrentText" Foreground="#AFA8A3"/><TextBlock x:Name="RatioText" Margin="0,4,0,0" Foreground="#D8A0A8"/><TextBlock Text="Optimized for external monitors and desktop displays. Laptop built-in panels may have limited custom-resolution support." Margin="0,7,0,0" Foreground="#8F8783" FontSize="11" TextWrapping="Wrap"/></StackPanel>
   <Grid Grid.Row="3" Margin="0,16,0,0"><Grid.ColumnDefinitions><ColumnDefinition/><ColumnDefinition/><ColumnDefinition/></Grid.ColumnDefinitions>
    <StackPanel><TextBlock Text="Width"/><TextBox x:Name="WidthBox" Height="30" Margin="0,4,8,0"/></StackPanel>
    <StackPanel Grid.Column="1"><TextBlock Text="Height (auto)"/><TextBox x:Name="HeightBox" Height="30" Margin="0,4,8,0" IsReadOnly="True" Background="#101010" Foreground="#D8A0A8"/></StackPanel>

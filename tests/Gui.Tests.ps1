@@ -31,6 +31,7 @@ if (-not (Test-Path $brandAsset)) { throw 'Canonical AbeyyTechXy logo asset miss
 $resolutionUi = Get-Content (Join-Path $root 'display\ResolutionUi.ps1') -Raw -Encoding UTF8
 if ($resolutionUi -notmatch 'x:Name="HeightBox"[^>]+IsReadOnly="True"') { throw 'Custom Resolution height must be read-only.' }
 if ($resolutionUi -notmatch 'Aspect ratio locked') { throw 'Aspect-lock user message missing.' }
+if ($resolutionUi -notmatch [regex]::Escape('Optimized for external monitors and desktop displays. Laptop built-in panels may have limited custom-resolution support.')) { throw '986 Custom Resolution suitability note missing.' }
 
 $window.Close()
 Write-Host 'PASS: v0.8 alpha WPF loads, Storage/Resolution controls are wired, and Never-Lock message is present.' -ForegroundColor Green

@@ -2,6 +2,16 @@
 
 All notable project changes are documented here.
 
+## [0.8.0-alpha.5] - 2026-09-14
+
+### Added
+- Added 986 Storage Intelligence P1: scan reports now retain Top 10 largest files, Top 10 largest root folders and review-only cleanup recommendations.
+- 986 Storage cards preview the Top 3 files/folders plus the highest-impact review recommendation without deleting or modifying user data.
+- Custom Resolution now shows the approved 986-style suitability note for external monitors/desktop displays and warns that built-in laptop panels may have limited custom-resolution support.
+
+### Safety
+- Storage Intelligence P1 is analysis-only. No automatic delete, cleanup, registry mutation or file removal action was added.
+
 ## [0.8.0-alpha.4] - 2026-09-14
 
 ### Changed

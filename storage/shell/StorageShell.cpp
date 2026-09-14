@@ -31,6 +31,9 @@ struct DriveCard {
     bool scanning = false;
     DWORD scanError = ERROR_SUCCESS;
     HWND scanButton = nullptr;
+    std::wstring topFilesPreview;
+    std::wstring topFoldersPreview;
+    std::wstring recommendationPreview;
 };
 
 struct CardLayout {
@@ -41,11 +44,13 @@ struct CardLayout {
     int labelColumns = 1;
     int labelRows = 1;
     int labelY = 0;
+    int intelY = 0;
+    int intelHeight = 0;
     int buttonTop = 0;
     int cardHeight = 0;
 };
 
-static CardLayout BuildCardLayout(const RECT& client, int top) {
+static CardLayout BuildCardLayout(const RECT& client, int top, bool intelligence) {
     CardLayout layout{};
     const int margin = client.right < 520 ? 14 : 28;
     const int left = margin;
@@ -54,7 +59,9 @@ static CardLayout BuildCardLayout(const RECT& client, int top) {
     layout.labelColumns = layout.contentWidth >= 700 ? 4 : (layout.contentWidth >= 260 ? 2 : 1);
     layout.labelRows = (7 + layout.labelColumns - 1) / layout.labelColumns;
     layout.labelY = top + 82;
-    layout.buttonTop = layout.labelY + layout.labelRows * 25 + 8;
+    layout.intelY = layout.labelY + layout.labelRows * 25 + 10;
+    layout.intelHeight = intelligence ? (layout.contentWidth >= 520 ? 150 : 235) : 0;
+    layout.buttonTop = layout.intelY + layout.intelHeight + 8;
     layout.cardHeight = (layout.buttonTop - top) + 32 + 16;
     layout.card = RECT{ left, top, right, top + layout.cardHeight };
     layout.bar = RECT{ left + 18, top + 48, right - 18, top + 68 };
@@ -145,6 +152,71 @@ static ULONGLONG JsonNumber(const std::string& json, const char* name) {
     return value;
 }
 
+static int HexValue(char c) {
+    if (c >= '0' && c <= '9') return c - '0';
+    if (c >= 'a' && c <= 'f') return c - 'a' + 10;
+    if (c >= 'A' && c <= 'F') return c - 'A' + 10;
+    return -1;
+}
+
+static void AppendUtf8CodePoint(std::string& out, unsigned cp) {
+    if (cp <= 0x7F) out.push_back(static_cast<char>(cp));
+    else if (cp <= 0x7FF) {
+        out.push_back(static_cast<char>(0xC0 | (cp >> 6)));
+        out.push_back(static_cast<char>(0x80 | (cp & 0x3F)));
+    } else {
+        out.push_back(static_cast<char>(0xE0 | (cp >> 12)));
+        out.push_back(static_cast<char>(0x80 | ((cp >> 6) & 0x3F)));
+        out.push_back(static_cast<char>(0x80 | (cp & 0x3F)));
+    }
+}
+
+static std::wstring Utf8ToWide(const std::string& text) {
+    if (text.empty()) return L"";
+    int chars = MultiByteToWideChar(CP_UTF8, MB_ERR_INVALID_CHARS, text.data(), static_cast<int>(text.size()), nullptr, 0);
+    if (chars <= 0) return L"";
+    std::wstring out(static_cast<size_t>(chars), L'\0');
+    MultiByteToWideChar(CP_UTF8, MB_ERR_INVALID_CHARS, text.data(), static_cast<int>(text.size()), &out[0], chars);
+    return out;
+}
+
+static std::wstring JsonString(const std::string& json, const char* name) {
+    std::string key = std::string("\"") + name + "\":";
+    size_t p = json.find(key);
+    if (p == std::string::npos) return L"";
+    p += key.size();
+    while (p < json.size() && (json[p] == ' ' || json[p] == '\t')) ++p;
+    if (p >= json.size() || json[p] != '"') return L"";
+    ++p;
+    std::string decoded;
+    while (p < json.size()) {
+        char c = json[p++];
+        if (c == '"') break;
+        if (c != '\\') { decoded.push_back(c); continue; }
+        if (p >= json.size()) break;
+        char esc = json[p++];
+        switch (esc) {
+            case '"': decoded.push_back('"'); break;
+            case '\\': decoded.push_back('\\'); break;
+            case '/': decoded.push_back('/'); break;
+            case 'b': decoded.push_back('\b'); break;
+            case 'f': decoded.push_back('\f'); break;
+            case 'n': decoded.push_back('\n'); break;
+            case 'r': decoded.push_back('\r'); break;
+            case 't': decoded.push_back('\t'); break;
+            case 'u': {
+                if (p + 4 > json.size()) break;
+                unsigned cp = 0; bool ok = true;
+                for (int i = 0; i < 4; ++i) { int h = HexValue(json[p + i]); if (h < 0) { ok = false; break; } cp = (cp << 4) | static_cast<unsigned>(h); }
+                if (ok) { AppendUtf8CodePoint(decoded, cp); p += 4; }
+                break;
+            }
+            default: decoded.push_back(esc); break;
+        }
+    }
+    return Utf8ToWide(decoded);
+}
+
 static bool LoadCache(DriveCard& d) {
     std::string json;
     if (!ReadUtf8File(CachePath(d.root), json)) return false;
@@ -155,6 +227,9 @@ static bool LoadCache(DriveCard& d) {
     d.categories.audio = JsonNumber(json, "Audio");
     d.categories.system = JsonNumber(json, "System");
     d.categories.other = JsonNumber(json, "Other");
+    d.topFilesPreview = JsonString(json, "TopFilesPreview");
+    d.topFoldersPreview = JsonString(json, "TopFoldersPreview");
+    d.recommendationPreview = JsonString(json, "RecommendationPreview");
     d.cacheLoaded = true;
     d.scanning = false;
     return true;
@@ -323,7 +398,7 @@ private:
         GetClientRect(hwnd_, &client);
         int top = 88;
         for (auto& d : drives_) {
-            CardLayout layout = BuildCardLayout(client, top);
+            CardLayout layout = BuildCardLayout(client, top, d.cacheLoaded);
             if (d.scanButton) {
                 MoveWindow(d.scanButton,
                     layout.scanButton.left, layout.scanButton.top,
@@ -402,6 +477,7 @@ private:
         CloseHandle(pi.hThread); CloseHandle(pi.hProcess);
         d.scanError = ERROR_SUCCESS;
         d.scanning = true; d.cacheLoaded = false; d.categories = CategoryBytes{};
+        d.topFilesPreview.clear(); d.topFoldersPreview.clear(); d.recommendationPreview.clear();
         if (d.scanButton) InvalidateRect(d.scanButton, nullptr, TRUE);
         return true;
     }
@@ -412,7 +488,7 @@ private:
         GetClientRect(hwnd_, &client);
         int top = 88;
         for (auto& d : drives_) {
-            CardLayout layout = BuildCardLayout(client, top);
+            CardLayout layout = BuildCardLayout(client, top, d.cacheLoaded);
             if (PtInRect(&layout.scanButton, p) && !d.scanning) {
                 StartScan(d); InvalidateRect(hwnd_, nullptr, FALSE); break;
             }
@@ -437,7 +513,7 @@ private:
 
         int top = 88;
         for (auto& d : drives_) {
-            CardLayout layout = BuildCardLayout(client, top);
+            CardLayout layout = BuildCardLayout(client, top, d.cacheLoaded);
             const int left = layout.card.left;
             const int right = layout.card.right;
             const int contentWidth = layout.contentWidth;
@@ -501,6 +577,52 @@ private:
                 } else msg = L"No category cache yet. Scan this drive to analyze storage.";
                 RECT messageRect{ left + 18, labelY, right - 18, buttonTop - 4 };
                 DrawTextW(dc, msg.c_str(), -1, &messageRect, DT_LEFT | DT_TOP | DT_WORDBREAK | DT_END_ELLIPSIS);
+            }
+
+            if (d.cacheLoaded) {
+                const int iy = layout.intelY;
+                SetTextColor(dc, RGB(216, 160, 168));
+                const wchar_t* intelTitle = L"Storage Intelligence";
+                TextOutW(dc, left + 18, iy, intelTitle, static_cast<int>(wcslen(intelTitle)));
+                SetTextColor(dc, RGB(245, 241, 238));
+                if (contentWidth >= 520) {
+                    const int gap = 18;
+                    const int half = max(1, (contentWidth - gap) / 2);
+                    const int rightX = left + 18 + half + gap;
+                    const wchar_t* fileTitle = L"Largest files";
+                    const wchar_t* folderTitle = L"Largest folders";
+                    TextOutW(dc, left + 18, iy + 24, fileTitle, static_cast<int>(wcslen(fileTitle)));
+                    TextOutW(dc, rightX, iy + 24, folderTitle, static_cast<int>(wcslen(folderTitle)));
+                    SetTextColor(dc, RGB(175, 168, 163));
+                    RECT filesRect{ left + 18, iy + 46, left + 18 + half, iy + 98 };
+                    RECT foldersRect{ rightX, iy + 46, right - 18, iy + 98 };
+                    DrawTextW(dc, (d.topFilesPreview.empty() ? L"No data" : d.topFilesPreview.c_str()), -1, &filesRect, DT_LEFT | DT_TOP | DT_WORDBREAK | DT_END_ELLIPSIS);
+                    DrawTextW(dc, (d.topFoldersPreview.empty() ? L"No data" : d.topFoldersPreview.c_str()), -1, &foldersRect, DT_LEFT | DT_TOP | DT_WORDBREAK | DT_END_ELLIPSIS);
+                    SetTextColor(dc, RGB(255, 138, 0));
+                    const wchar_t* reviewTitle = L"986 Review";
+                    TextOutW(dc, left + 18, iy + 104, reviewTitle, static_cast<int>(wcslen(reviewTitle)));
+                    SetTextColor(dc, RGB(175, 168, 163));
+                    RECT reviewRect{ left + 105, iy + 101, right - 18, iy + 140 };
+                    DrawTextW(dc, (d.recommendationPreview.empty() ? L"Review only; 986 never auto-deletes." : d.recommendationPreview.c_str()), -1, &reviewRect, DT_LEFT | DT_TOP | DT_WORDBREAK | DT_END_ELLIPSIS);
+                } else {
+                    const wchar_t* fileTitle = L"Largest files";
+                    TextOutW(dc, left + 18, iy + 24, fileTitle, static_cast<int>(wcslen(fileTitle)));
+                    SetTextColor(dc, RGB(175, 168, 163));
+                    RECT filesRect{ left + 18, iy + 46, right - 18, iy + 96 };
+                    DrawTextW(dc, (d.topFilesPreview.empty() ? L"No data" : d.topFilesPreview.c_str()), -1, &filesRect, DT_LEFT | DT_TOP | DT_WORDBREAK | DT_END_ELLIPSIS);
+                    SetTextColor(dc, RGB(245, 241, 238));
+                    const wchar_t* folderTitle = L"Largest folders";
+                    TextOutW(dc, left + 18, iy + 102, folderTitle, static_cast<int>(wcslen(folderTitle)));
+                    SetTextColor(dc, RGB(175, 168, 163));
+                    RECT foldersRect{ left + 18, iy + 124, right - 18, iy + 174 };
+                    DrawTextW(dc, (d.topFoldersPreview.empty() ? L"No data" : d.topFoldersPreview.c_str()), -1, &foldersRect, DT_LEFT | DT_TOP | DT_WORDBREAK | DT_END_ELLIPSIS);
+                    SetTextColor(dc, RGB(255, 138, 0));
+                    const wchar_t* reviewTitle = L"986 Review";
+                    TextOutW(dc, left + 18, iy + 180, reviewTitle, static_cast<int>(wcslen(reviewTitle)));
+                    SetTextColor(dc, RGB(175, 168, 163));
+                    RECT reviewRect{ left + 18, iy + 202, right - 18, iy + 230 };
+                    DrawTextW(dc, (d.recommendationPreview.empty() ? L"Review only; 986 never auto-deletes." : d.recommendationPreview.c_str()), -1, &reviewRect, DT_LEFT | DT_TOP | DT_WORDBREAK | DT_END_ELLIPSIS);
+                }
             }
 
             top += cardH + 18;

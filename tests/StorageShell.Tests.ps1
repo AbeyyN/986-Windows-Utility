@@ -31,4 +31,8 @@ foreach ($marker in '#include <gdiplus.h>','LoadBrandWatermark','DrawBrandWaterm
 }
 $buildText = Get-Content (Join-Path $root 'storage\Build-StorageView.ps1') -Raw -Encoding UTF8
 if ($buildText -notmatch [regex]::Escape('gdiplus.lib')) { throw '986 Storage watermark requires GDI+ linker input.' }
+foreach ($marker in 'TopFilesPreview','TopFoldersPreview','RecommendationPreview','Storage Intelligence','Largest files','Largest folders','986 Review','never auto-deletes','JsonString') {
+    if ($cppText -notmatch [regex]::Escape($marker)) { throw "Missing Storage Intelligence UI marker: $marker" }
+}
+if ($cppText -match 'SHFileOperation|IFileOperation|RemoveDirectoryW') { throw 'Storage Intelligence P1 must remain review-only.' }
 Write-Host 'PASS: Storage shell CLSID, COM surface and no-self-registration contract validated.' -ForegroundColor Green
