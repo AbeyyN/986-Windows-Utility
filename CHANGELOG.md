@@ -2,6 +2,15 @@
 
 All notable project changes are documented here.
 
+## [0.8.1-alpha.6] - 2026-09-15
+
+### Changed
+- Reduced the 986 Storage official-logo watermark from 50% to the user-approved 25% opacity so branding remains visible without competing with Storage Intelligence content.
+- Main WinUtil watermark remains unchanged at 30%.
+
+### Validation
+- Updated the native Storage watermark regression guard to lock the 25% opacity contract.
+
 ## [0.8.1-alpha.5] - 2026-09-15
 
 ### Fixed

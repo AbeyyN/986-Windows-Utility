@@ -402,7 +402,7 @@ private:
         const double scale = min((cw * 0.55) / static_cast<double>(iw), (ch * 0.55) / static_cast<double>(ih));
         const int w = max(1, static_cast<int>(iw * scale)), h = max(1, static_cast<int>(ih * scale));
         const int x = client.left + (cw - w) / 2, y = client.top + (ch - h) / 2;
-        Gdiplus::ColorMatrix matrix = { 1,0,0,0,0, 0,1,0,0,0, 0,0,1,0,0, 0,0,0,0.50f,0, 0,0,0,0,1 };
+        Gdiplus::ColorMatrix matrix = { 1,0,0,0,0, 0,1,0,0,0, 0,0,1,0,0, 0,0,0,0.25f,0, 0,0,0,0,1 };
         Gdiplus::ImageAttributes attrs;
         attrs.SetColorMatrix(&matrix, Gdiplus::ColorMatrixFlagsDefault, Gdiplus::ColorAdjustTypeBitmap);
         Gdiplus::Graphics graphics(dc);
@@ -664,7 +664,7 @@ private:
         PAINTSTRUCT ps{}; HDC dc = BeginPaint(hwnd, &ps);
         RECT client{}; GetClientRect(hwnd, &client);
         HBRUSH bg = CreateSolidBrush(RGB(0, 0, 0)); FillRect(dc, &client, bg); DeleteObject(bg);
-        // Two-pass composition: opaque card surfaces first, then the 50% brand watermark,
+        // Two-pass composition: opaque card surfaces first, then the 25% brand watermark,
         // then all text/bars/buttons. This keeps the official logo visible without obscuring content.
         DrawCardBackgrounds(dc, client);
         DrawBrandWatermark(dc, client);
