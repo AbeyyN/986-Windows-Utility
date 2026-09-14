@@ -2,6 +2,16 @@
 
 All notable project changes are documented here.
 
+## [0.8.1-alpha.3] - 2026-09-15
+
+### Added
+- Added 986 Update Center with current/latest stable status, release notes, official release navigation and the canonical short update command.
+- Added `Update & Restart` using the existing checksum-verified bootstrap rather than a second updater/downloader.
+
+### Safety
+- In-place update is blocked when the current 986 Storage shell DLL is still loaded by File Explorer; 986 never force-restarts Explorer to update itself.
+- Development/alpha builds can check stable releases but cannot auto-downgrade through Update Center.
+
 ## [0.8.1-alpha.2] - 2026-09-15
 
 ### Added

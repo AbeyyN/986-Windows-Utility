@@ -25,7 +25,7 @@ Undo restores the original state captured by 986 before its first managed write.
 ## Remote bootstrap
 
 ```powershell
-irm https://raw.githubusercontent.com/AbeyyN/986-Windows-Utility/main/bootstrap.ps1 | iex
+irm https://986-winutil.abeyytechxy.com | iex
 ```
 
 The bootstrap downloads the application to a local temporary directory before execution so normal elevation and file-based runtime behaviour remain available.

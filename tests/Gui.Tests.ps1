@@ -13,10 +13,10 @@ Add-Type -AssemblyName WindowsBase
 $reader = New-Object System.Xml.XmlNodeReader $xml
 $window = [Windows.Markup.XamlReader]::Load($reader)
 
-foreach ($name in 'ProfilePicker','BtnProfileSelect','BtnProfileSave','BtnProfileDelete','BtnApply','BtnUndo','BtnStorage','BtnResolution','BrandWatermark','TweakPanel','LogBox') {
+foreach ($name in 'ProfilePicker','BtnProfileSelect','BtnProfileSave','BtnProfileDelete','BtnApply','BtnUndo','BtnStorage','BtnResolution','BtnUpdate','BrandWatermark','TweakPanel','LogBox') {
     if (-not $window.FindName($name)) { throw "WPF control missing: $name" }
 }
-foreach ($handler in '$BtnProfileSelect.Add_Click','$BtnProfileSave.Add_Click','$BtnProfileDelete.Add_Click','$BtnStorage.Add_Click','$BtnResolution.Add_Click') {
+foreach ($handler in '$BtnProfileSelect.Add_Click','$BtnProfileSave.Add_Click','$BtnProfileDelete.Add_Click','$BtnStorage.Add_Click','$BtnResolution.Add_Click','$BtnUpdate.Add_Click') {
     if ($text -notmatch [regex]::Escape($handler)) { throw "Profile UI handler missing: $handler" }
 }
 if ($text -notmatch [regex]::Escape('986 never locks or auto-reapplies them')) { throw 'Never-Lock user message missing from GUI.' }
@@ -34,4 +34,4 @@ if ($resolutionUi -notmatch 'Aspect ratio locked') { throw 'Aspect-lock user mes
 if ($resolutionUi -notmatch [regex]::Escape('Optimized for external monitors and desktop displays. Laptop built-in panels may have limited custom-resolution support.')) { throw '986 Custom Resolution suitability note missing.' }
 
 $window.Close()
-Write-Host 'PASS: v0.8 alpha WPF loads, Storage/Resolution controls are wired, and Never-Lock message is present.' -ForegroundColor Green
+Write-Host 'PASS: current 986 WPF loads, Storage/Resolution controls are wired, and Never-Lock message is present.' -ForegroundColor Green
