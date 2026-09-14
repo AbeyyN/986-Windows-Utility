@@ -72,6 +72,7 @@ try {
         'modules\TweakIntelligence.ps1',
         'modules\Doctor.ps1',
         'modules\Profiles.ps1',
+        'modules\UpdateCenter.ps1',
         'display\ResolutionManager.ps1',
         'display\ResolutionUi.ps1',
         'display\986ResolutionHelper.exe',

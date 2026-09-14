@@ -4,11 +4,12 @@ $app = Join-Path $root '986-Windows-Utility.ps1'
 $audit = Join-Path $root 'modules\TweakIntelligence.ps1'
 $doctor = Join-Path $root 'modules\Doctor.ps1'
 $profiles = Join-Path $root 'modules\Profiles.ps1'
+$update = Join-Path $root 'modules\UpdateCenter.ps1'
 $resolution = Join-Path $root 'display\ResolutionManager.ps1'
 $resolutionUi = Join-Path $root 'display\ResolutionUi.ps1'
 $bootstrap = Join-Path $root 'bootstrap.ps1'
 $changelog = Join-Path $root 'CHANGELOG.md'
-foreach ($file in @($app,$audit,$doctor,$profiles,$resolution,$resolutionUi,$bootstrap)) {
+foreach ($file in @($app,$audit,$doctor,$profiles,$update,$resolution,$resolutionUi,$bootstrap)) {
     if (-not (Test-Path $file)) { throw "Required script not found: $file" }
     $tokens=$null; $errors=$null
     [System.Management.Automation.Language.Parser]::ParseFile($file,[ref]$tokens,[ref]$errors)|Out-Null
@@ -19,6 +20,8 @@ $text = Get-Content $app -Raw -Encoding UTF8
 $auditText = Get-Content $audit -Raw -Encoding UTF8
 $doctorText = Get-Content $doctor -Raw -Encoding UTF8
 $profilesText = Get-Content $profiles -Raw -Encoding UTF8
+$updateText = Get-Content $update -Raw -Encoding UTF8
+if ($updateText -match '\[Windows\.Window\]\$OwnerWindow') { throw 'Update Center must not require WPF owner types at module-load time.' }
 $bootText = Get-Content $bootstrap -Raw -Encoding UTF8
 $changelogText = Get-Content $changelog -Raw -Encoding UTF8
 $resolutionUiText = Get-Content $resolutionUi -Raw -Encoding UTF8
@@ -36,6 +39,7 @@ foreach($mode in '\[switch\]\$AuditOnly','\[switch\]\$DoctorOnly','\[switch\]\$P
 foreach($fn in 'Get-TweakIntelligenceReport','Export-TweakAuditReport'){if($auditText -notmatch "function\s+$fn"){throw "Missing audit function: $fn"}}
 foreach($fn in 'Get-DoctorReport','Export-DoctorReport','Get-DoctorRepairPreflight','Start-DoctorRepair','Show-DoctorWindow'){if($doctorText -notmatch "function\s+$fn"){throw "Missing Doctor function: $fn"}}
 foreach($fn in 'Get-986BuiltInProfiles','Save-986CustomProfile','Get-986ProfileTweakIds'){if($profilesText -notmatch "function\s+$fn"){throw "Missing Profiles function: $fn"}}
+foreach($fn in 'Get-986LatestStableRelease','Test-986StorageShellLoaded','Start-986VerifiedUpdate','Show-986UpdateCenter'){if($updateText -notmatch "function\s+$fn"){throw "Missing Update Center function: $fn"}}
 
 $bootstrapContracts = @(
     'releases/latest',
@@ -46,6 +50,7 @@ $bootstrapContracts = @(
     'storage\\bin\\986StorageShell\.dll',
     'storage\\bin\\986StorageScanner\.exe',
     'storage\\registration\\Register-StorageView\.ps1',
+    'modules\\UpdateCenter\.ps1',
     '\$item\.Name -eq ''state'''
 )
 foreach ($contract in $bootstrapContracts) {
@@ -55,4 +60,4 @@ if ($bootText -match 'raw\.githubusercontent\.com/.+/main/modules/') {
     throw 'Bootstrap must install the complete verified stable release, not partial raw modules.'
 }
 
-Write-Host "PASS: v0.7 app/modules parse clean, release version matches CHANGELOG, 30 active + 4 legacy tweaks, Storage and Resolution UI present, verified stable-release bootstrap contract present." -ForegroundColor Green
+Write-Host "PASS: current 986 app/modules parse clean, release version matches CHANGELOG, 30 active + 4 legacy tweaks, Storage and Resolution UI present, verified stable-release bootstrap contract present." -ForegroundColor Green

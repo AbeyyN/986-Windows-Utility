@@ -32,6 +32,14 @@ public sealed class CleanupRecommendation {
 }
 
 [DataContract]
+public sealed class ScanProgress {
+    [DataMember] public long Files;
+    [DataMember] public long ScannedBytes;
+    [DataMember] public string CurrentDirectory;
+    [DataMember] public DateTime StartedUtc;
+}
+
+[DataContract]
 public sealed class ScanReport {
     [DataMember] public string Root;
     [DataMember] public DateTime GeneratedUtc;
@@ -45,6 +53,9 @@ public sealed class ScanReport {
     [DataMember] public string TopFilesPreview;
     [DataMember] public string TopFoldersPreview;
     [DataMember] public string RecommendationPreview;
+    [DataMember] public string TopFile1Path;
+    [DataMember] public string TopFolder1Path;
+    [DataMember] public string RecommendationPath;
 }
 
 sealed class ScanContext {
@@ -57,6 +68,9 @@ sealed class ScanContext {
     public long DownloadsBytes;
     public long TempBytes;
     public long RecycleBinBytes;
+    public string ProgressPath;
+    public DateTime StartedUtc;
+    public long NextProgressFile = 512;
 }
 
 public static class StorageScanner {
@@ -160,6 +174,20 @@ public static class StorageScanner {
         if (IsAtOrUnder(file, ctx.RecycleBin)) ctx.RecycleBinBytes += bytes;
     }
 
+    static void WriteProgress(ScanReport report, ScanContext ctx, string currentDirectory, bool force) {
+        if (string.IsNullOrEmpty(ctx.ProgressPath)) return;
+        if (!force && report.Files < ctx.NextProgressFile) return;
+        ctx.NextProgressFile = report.Files + 512;
+        var progress = new ScanProgress { Files=report.Files, ScannedBytes=report.ScannedBytes, CurrentDirectory=currentDirectory, StartedUtc=ctx.StartedUtc };
+        string parent = Path.GetDirectoryName(Path.GetFullPath(ctx.ProgressPath));
+        if (!string.IsNullOrEmpty(parent)) Directory.CreateDirectory(parent);
+        string temp = ctx.ProgressPath + ".tmp-" + Guid.NewGuid().ToString("N");
+        var serializer = new DataContractJsonSerializer(typeof(ScanProgress));
+        using (var stream = File.Create(temp)) serializer.WriteObject(stream, progress);
+        if (File.Exists(ctx.ProgressPath)) File.Delete(ctx.ProgressPath);
+        File.Move(temp, ctx.ProgressPath);
+    }
+
     static IntPtr OpenDirectory(string dir, out WIN32_FIND_DATA data) {
         string pattern = Path.Combine(dir, "*");
         IntPtr h = FindFirstFileExW(pattern, FindExInfoBasic, out data, FindExSearchNameMatch, IntPtr.Zero, FindFirstExLargeFetch);
@@ -188,6 +216,7 @@ public static class StorageScanner {
                         TrackTopFile(report, full, size);
                         TrackRootFolder(ctx, full, size);
                         TrackReviewCandidates(ctx, full, size);
+                        WriteProgress(report, ctx, dir, false);
                     }
                 }
                 more = FindNextFileW(h, out data);
@@ -240,9 +269,12 @@ public static class StorageScanner {
         report.RecommendationPreview = report.Recommendations.Count > 0
             ? report.Recommendations[0].Title + " — " + PreviewBytes(report.Recommendations[0].Bytes) + " | Review only; 986 never auto-deletes."
             : "No high-impact review items detected. 986 never auto-deletes.";
+        report.TopFile1Path = report.TopFiles.Count > 0 ? report.TopFiles[0].Path : null;
+        report.TopFolder1Path = report.TopFolders.Count > 0 ? report.TopFolders[0].Path : null;
+        report.RecommendationPath = report.Recommendations.Count > 0 ? report.Recommendations[0].Path : null;
     }
 
-    public static ScanReport Scan(string root) {
+    public static ScanReport Scan(string root, string progressPath) {
         string full = Path.GetFullPath(root);
         if (!Directory.Exists(full)) throw new DirectoryNotFoundException(full);
         var report = new ScanReport {
@@ -254,14 +286,19 @@ public static class StorageScanner {
             Root = full.TrimEnd(Path.DirectorySeparatorChar), RootPrefix = WithTrailingSeparator(full),
             Downloads = string.IsNullOrEmpty(user) ? null : Path.Combine(user, "Downloads"),
             Temp = Path.GetFullPath(Path.GetTempPath()).TrimEnd(Path.DirectorySeparatorChar),
-            RecycleBin = Path.Combine(Path.GetPathRoot(full), "$Recycle.Bin")
+            RecycleBin = Path.Combine(Path.GetPathRoot(full), "$Recycle.Bin"),
+            ProgressPath = progressPath, StartedUtc = DateTime.UtcNow
         };
+        WriteProgress(report, ctx, full, true);
         var pending = new Stack<string>();
         pending.Push(full);
         while (pending.Count > 0) ScanDirectory(pending.Pop(), pending, report, ctx);
         FinalizeIntelligence(report, ctx);
+        WriteProgress(report, ctx, full, true);
         return report;
     }
+
+    public static ScanReport Scan(string root) { return Scan(root, null); }
 
     static void WriteJson(ScanReport report, string output) {
         string parent = Path.GetDirectoryName(Path.GetFullPath(output));
@@ -274,10 +311,11 @@ public static class StorageScanner {
     }
 
     public static int Main(string[] args) {
-        if (args.Length < 1 || args.Length > 2) { Console.Error.WriteLine("Usage: 986StorageScanner.exe <root> [output.json]"); return 2; }
+        if (args.Length < 1 || args.Length > 3) { Console.Error.WriteLine("Usage: 986StorageScanner.exe <root> [output.json] [progress.json]"); return 2; }
         try {
-            var report = Scan(args[0]);
-            string output = args.Length == 2 ? args[1] : Path.Combine(Path.GetTempPath(), "986-storage.json");
+            string progress = args.Length == 3 ? args[2] : null;
+            var report = Scan(args[0], progress);
+            string output = args.Length >= 2 ? args[1] : Path.Combine(Path.GetTempPath(), "986-storage.json");
             WriteJson(report, output);
             Console.WriteLine(output);
             return 0;

@@ -41,6 +41,14 @@ try {
     if (-not $report.TopFolders -or $report.TopFolders.Count -lt 2) { throw 'TopFolders intelligence output missing.' }
     if ($report.TopFolders[0].Bytes -ne 101 -or $report.TopFolders[0].Path -notmatch 'FolderA$') { throw 'TopFolders ranking failed.' }
     if ($null -eq $report.Recommendations) { throw 'Recommendations collection missing.' }
+    if ([string]::IsNullOrWhiteSpace([string]$report.TopFile1Path) -or $report.TopFile1Path -notmatch 'large\.bin$') { throw 'TopFile1Path output missing or incorrect.' }
+    if ([string]::IsNullOrWhiteSpace([string]$report.TopFolder1Path) -or $report.TopFolder1Path -notmatch 'FolderA$') { throw 'TopFolder1Path output missing or incorrect.' }
+    $progress = Join-Path $build 'progress.json'
+    & $exe $fixture $json $progress | Out-Null
+    if ($LASTEXITCODE -ne 0 -or -not (Test-Path $progress)) { throw 'Storage scanner progress output missing.' }
+    $progressData = Get-Content $progress -Raw -Encoding UTF8 | ConvertFrom-Json
+    if ($progressData.Files -ne 8 -or $progressData.ScannedBytes -le 0) { throw 'Storage scanner progress counters invalid.' }
+    if ([string]::IsNullOrWhiteSpace([string]$progressData.CurrentDirectory)) { throw 'Storage scanner progress current-directory output missing.' }
     if (-not $report.TopFilesPreview -or $report.TopFilesPreview -notmatch 'large\.bin') { throw 'TopFiles preview missing.' }
     if (-not $report.TopFoldersPreview -or $report.TopFoldersPreview -notmatch 'FolderA') { throw 'TopFolders preview missing.' }
     if (-not $report.RecommendationPreview) { throw 'Recommendation preview missing.' }

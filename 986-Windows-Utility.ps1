@@ -3,7 +3,7 @@ param([switch]$NoElevation,[switch]$AuditOnly,[switch]$AuditJson,[switch]$Doctor
 Set-StrictMode -Version 3.0
 $ErrorActionPreference = 'Stop'
 $AppName = '986 Windows Utility'
-$Version = '0.8.0'
+$Version = '0.8.1'
 $Root = Split-Path -Parent $MyInvocation.MyCommand.Path
 $StateDir = Join-Path $Root 'state'
 $StateFile = Join-Path $StateDir 'original-state.json'
@@ -202,6 +202,10 @@ $ProfilesModule = Join-Path $Root 'modules\Profiles.ps1'
 if (-not (Test-Path $ProfilesModule)) { throw '986 Profiles module is missing.' }
 . $ProfilesModule
 
+$UpdateModule = Join-Path $Root 'modules\UpdateCenter.ps1'
+if (-not (Test-Path $UpdateModule)) { throw '986 Update Center module is missing.' }
+. $UpdateModule
+
 $ResolutionModule = Join-Path $Root 'display\ResolutionManager.ps1'
 if (-not (Test-Path $ResolutionModule)) { throw '986 Resolution module is missing.' }
 . $ResolutionModule
@@ -275,6 +279,7 @@ if ($DoctorOnly) {
         <Button x:Name="BtnExportDoctor" Content="Export Doctor"/>
         <Button x:Name="BtnStorage" Content="986 Storage" Background="#7A414B" BorderBrush="#B76E79"/>
         <Button x:Name="BtnResolution" Content="Custom Resolution" Background="#B76E79" BorderBrush="#D8A0A8"/>
+        <Button x:Name="BtnUpdate" Content="986 Update" Background="#171213" BorderBrush="#FF8A00"/>
         <ComboBox x:Name="ProfilePicker" Width="180" Margin="0,0,8,0" Padding="8,5" Background="#171213" Foreground="#F5F1EE" BorderBrush="#5A3C40"/>
         <Button x:Name="BtnProfileSelect" Content="Select Profile"/>
         <Button x:Name="BtnProfileSave" Content="Save Custom"/>
@@ -334,6 +339,7 @@ $BtnDoctor = $Window.FindName('BtnDoctor')
 $BtnExportDoctor = $Window.FindName('BtnExportDoctor')
 $BtnStorage = $Window.FindName('BtnStorage')
 $BtnResolution = $Window.FindName('BtnResolution')
+$BtnUpdate = $Window.FindName('BtnUpdate')
 $ProfilePicker = $Window.FindName('ProfilePicker')
 $BtnProfileSelect = $Window.FindName('BtnProfileSelect')
 $BtnProfileSave = $Window.FindName('BtnProfileSave')
@@ -448,7 +454,7 @@ $BtnStorage.Add_Click({
             if ($choice -eq [Windows.MessageBoxResult]::Yes) { Start-Process explorer.exe -ArgumentList ('shell:::' + $StorageClsid) }
             elseif ($choice -eq [Windows.MessageBoxResult]::No) { [void](& $StorageRegScript -Action Remove); Write-AppLog '986 STORAGE disabled and unregistered' }
         } else {
-            if (-not (Test-Path $StorageShellDll)) { throw '986StorageShell.dll is missing. Install the complete v0.7 package.' }
+            if (-not (Test-Path $StorageShellDll)) { throw '986StorageShell.dll is missing. Install the complete current package.' }
             [void](& $StorageRegScript -Action Install -DllPath $StorageShellDll)
             Write-AppLog '986 STORAGE enabled under This PC'
             Start-Process explorer.exe -ArgumentList ('shell:::' + $StorageClsid)
@@ -458,6 +464,10 @@ $BtnStorage.Add_Click({
 $BtnResolution.Add_Click({
     try { Show-986ResolutionWindow -StateDir $StateDir }
     catch { [Windows.MessageBox]::Show($_.Exception.Message,'986 Custom Resolution') | Out-Null }
+})
+$BtnUpdate.Add_Click({
+    try { Show-986UpdateCenter -CurrentVersion $Version -Root $Root -OwnerWindow $Window }
+    catch { [Windows.MessageBox]::Show($_.Exception.Message,'986 Update Center') | Out-Null }
 })
 $BtnProfileSelect.Add_Click({
     try { Select-986Profile ([string]$ProfilePicker.SelectedItem) }
@@ -512,5 +522,5 @@ Refresh-ProfilePicker '986 Balanced'
 Select-986Profile '986 Balanced'
 Write-AppLog "$AppName v$Version started | Admin=$(Test-IsAdministrator) | Host=$env:COMPUTERNAME"
 Write-AppLog "Baseline loaded. Preferences remain user-editable; 986 does not auto-reapply after Apply Selected."
-Write-AppLog 'v0.7 optional features: 986 Storage and Custom Resolution use explicit enable/trial actions only.'
+Write-AppLog '986 optional features: 986 Storage and Custom Resolution use explicit enable/trial actions only.'
 [void]$Window.ShowDialog()

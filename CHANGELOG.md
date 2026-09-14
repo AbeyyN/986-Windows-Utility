@@ -2,6 +2,76 @@
 
 All notable project changes are documented here.
 
+## [0.8.1] - 2026-09-15
+
+### Added
+- Added Storage Intelligence P2 with live scan progress, scoped Cancel Scan, cache age/state, safe review actions and report export.
+- Added 986 Update Center using the existing checksum-verified stable-release bootstrap path.
+
+### Changed
+- Fixed the native 986 Storage official-logo composition so branding remains visible above card surfaces.
+- Locked the user-approved 986 Storage watermark opacity at 25%; the main WinUtil watermark remains 30%.
+
+### Safety
+- Storage review/export remains non-destructive; no automatic file deletion was added.
+- Update Center blocks in-place update while the current 986 Storage DLL is loaded and never force-restarts Explorer.
+
+### Validation
+- Windows CI, native Storage build, real C:\ scan progress/cancel validation, Update Center loaded-DLL blocking, and isolated Explorer preview validation passed before stable promotion.
+
+## [0.8.1-alpha.6] - 2026-09-15
+
+### Changed
+- Reduced the 986 Storage official-logo watermark from 50% to the user-approved 25% opacity so branding remains visible without competing with Storage Intelligence content.
+- Main WinUtil watermark remains unchanged at 30%.
+
+### Validation
+- Updated the native Storage watermark regression guard to lock the 25% opacity contract.
+
+## [0.8.1-alpha.5] - 2026-09-15
+
+### Fixed
+- Hardened 986 Update Center owner-window parameters so the module can be loaded/tested independently before WPF assemblies are initialized.
+
+## [0.8.1-alpha.4] - 2026-09-15
+
+### Added
+- Added `Export Report` to 986 Storage cards. The current read-only scan cache is copied to the user Documents folder as a timestamped JSON report.
+
+### Safety
+- Export never deletes, moves or rewrites scanned user files; it only copies the existing 986 cache JSON.
+
+## [0.8.1-alpha.3] - 2026-09-15
+
+### Added
+- Added 986 Update Center with current/latest stable status, release notes, official release navigation and the canonical short update command.
+- Added `Update & Restart` using the existing checksum-verified bootstrap rather than a second updater/downloader.
+
+### Safety
+- In-place update is blocked when the current 986 Storage shell DLL is still loaded by File Explorer; 986 never force-restarts Explorer to update itself.
+- Development/alpha builds can check stable releases but cannot auto-downgrade through Update Center.
+
+## [0.8.1-alpha.2] - 2026-09-15
+
+### Added
+- Added live 986 Storage scan progress (files, bytes, elapsed time and current folder) using a sidecar progress file.
+- Added Cancel Scan with scoped termination of only the active 986 scanner process; cancellation never deletes user data.
+- Added cache timestamp/status so completed drive scans show when their current cache was generated.
+- Added safe Storage Intelligence review actions for the largest file, largest folder and highest-impact recommendation. Review actions only open/select locations in Explorer.
+
+### Safety
+- Review remains non-destructive: no reviewed file/folder path is ever passed to delete/remove APIs.
+- Scanner process handles are retained only while active and closed on completion/cancel/destruction.
+
+## [0.8.1-alpha.1] - 2026-09-15
+
+### Fixed
+- Fixed the 986 Storage official-logo watermark being hidden behind opaque drive cards by switching the native view to two-pass composition: card surfaces render first, the approved 50% watermark renders second, and all readable content renders last.
+- Removed stale v0.7 wording from current-package Storage/runtime messages.
+
+### Validation
+- Added a regression guard that requires Storage card backgrounds to render before the official watermark call.
+
 ## [0.8.0] - 2026-09-15
 
 ### Added
