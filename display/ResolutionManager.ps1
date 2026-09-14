@@ -13,6 +13,28 @@ function Test-986ResolutionRequest {
     return $true
 }
 
+function Get-986GreatestCommonDivisor {
+    param([int]$A,[int]$B)
+    $A=[math]::Abs($A); $B=[math]::Abs($B)
+    while ($B -ne 0) { $t=$B; $B=$A % $B; $A=$t }
+    if ($A -eq 0) { return 1 }
+    return $A
+}
+
+function Get-986AspectLockedResolution {
+    param([Parameter(Mandatory=$true)]$Display,[Parameter(Mandatory=$true)][int]$Width)
+    $dw=[int]$Display.Width; $dh=[int]$Display.Height
+    if ($dw -le 0 -or $dh -le 0) { throw 'Selected display has an invalid current aspect ratio.' }
+    $g=Get-986GreatestCommonDivisor -A $dw -B $dh
+    $rw=[int]($dw/$g); $rh=[int]($dh/$g)
+    $height=[int][math]::Round(([double]$Width * [double]$rh / [double]$rw),[MidpointRounding]::AwayFromZero)
+    [pscustomobject]@{
+        Width=$Width; Height=$height; RatioWidth=$rw; RatioHeight=$rh
+        RatioText=("{0}:{1}" -f $rw,$rh)
+        Exact=(($Width * $rh) % $rw -eq 0)
+    }
+}
+
 function Get-986ResolutionProvider {
     param([string]$AdapterName,[string]$AdapterCompatibility)
     $text = (($AdapterName + ' ' + $AdapterCompatibility).Trim()).ToLowerInvariant()

@@ -27,5 +27,10 @@ if ($text -notmatch [regex]::Escape("assets\AbeyyTechXy-logo.png")) { throw 'Can
 $brandAsset = Join-Path $root 'assets\AbeyyTechXy-logo.png'
 if (-not (Test-Path $brandAsset)) { throw 'Canonical AbeyyTechXy logo asset missing.' }
 
+
+$resolutionUi = Get-Content (Join-Path $root 'display\ResolutionUi.ps1') -Raw -Encoding UTF8
+if ($resolutionUi -notmatch 'x:Name="HeightBox"[^>]+IsReadOnly="True"') { throw 'Custom Resolution height must be read-only.' }
+if ($resolutionUi -notmatch 'Aspect ratio locked') { throw 'Aspect-lock user message missing.' }
+
 $window.Close()
 Write-Host 'PASS: v0.8 alpha WPF loads, Storage/Resolution controls are wired, and Never-Lock message is present.' -ForegroundColor Green

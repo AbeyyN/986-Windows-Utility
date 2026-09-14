@@ -2,6 +2,16 @@
 
 All notable project changes are documented here.
 
+## [0.8.0-alpha.4] - 2026-09-14
+
+### Changed
+- Custom Resolution now locks each selected display to its current aspect ratio: users enter Width and Height is calculated automatically/read-only.
+- Exact requested modes still pass through the existing driver `CDS_TEST` gate and 15-second reversible trial before any persistent change.
+- Driver-rejected modes now report the exact aspect-locked resolution and an Intel internal-panel limitation note instead of presenting an ineffective force path.
+
+### Fixed
+- Prevents mismatched manual width/height pairs such as 3440x1440 on a 2240x1400 (8:5) display; width 3440 now derives height 2150 automatically.
+
 ## [0.8.0-alpha.3] - 2026-09-14
 
 ### Fixed
