@@ -3,6 +3,7 @@
 #include <windowsx.h>
 #include <shlobj.h>
 #include <shobjidl.h>
+#include <shellapi.h>
 #include <new>
 #include <vector>
 #include <string>
@@ -31,15 +32,25 @@ struct DriveCard {
     bool scanning = false;
     DWORD scanError = ERROR_SUCCESS;
     HWND scanButton = nullptr;
+    HANDLE scanProcess = nullptr;
+    ULONGLONG scanStartTick = 0;
+    std::wstring progressText;
+    std::wstring cacheStatus;
     std::wstring topFilesPreview;
     std::wstring topFoldersPreview;
     std::wstring recommendationPreview;
+    std::wstring topFile1Path;
+    std::wstring topFolder1Path;
+    std::wstring recommendationPath;
 };
 
 struct CardLayout {
     RECT card{};
     RECT bar{};
     RECT scanButton{};
+    RECT openFileAction{};
+    RECT openFolderAction{};
+    RECT reviewAction{};
     int contentWidth = 0;
     int labelColumns = 1;
     int labelRows = 1;
@@ -60,7 +71,22 @@ static CardLayout BuildCardLayout(const RECT& client, int top, bool intelligence
     layout.labelRows = (7 + layout.labelColumns - 1) / layout.labelColumns;
     layout.labelY = top + 82;
     layout.intelY = layout.labelY + layout.labelRows * 25 + 10;
-    layout.intelHeight = intelligence ? (layout.contentWidth >= 520 ? 150 : 235) : 0;
+    layout.intelHeight = intelligence ? (layout.contentWidth >= 520 ? 190 : 335) : 0;
+    if (intelligence) {
+        if (layout.contentWidth >= 520) {
+            const int gap = 8;
+            const int actionWidth = max(90, (layout.contentWidth - 2 * gap) / 3);
+            const int actionY = layout.intelY + 150;
+            layout.openFileAction = RECT{ left + 18, actionY, left + 18 + actionWidth, actionY + 28 };
+            layout.openFolderAction = RECT{ layout.openFileAction.right + gap, actionY, layout.openFileAction.right + gap + actionWidth, actionY + 28 };
+            layout.reviewAction = RECT{ layout.openFolderAction.right + gap, actionY, right - 18, actionY + 28 };
+        } else {
+            const int actionY = layout.intelY + 235;
+            layout.openFileAction = RECT{ left + 18, actionY, right - 18, actionY + 26 };
+            layout.openFolderAction = RECT{ left + 18, actionY + 31, right - 18, actionY + 57 };
+            layout.reviewAction = RECT{ left + 18, actionY + 62, right - 18, actionY + 88 };
+        }
+    }
     layout.buttonTop = layout.intelY + layout.intelHeight + 8;
     layout.cardHeight = (layout.buttonTop - top) + 32 + 16;
     layout.card = RECT{ left, top, right, top + layout.cardHeight };
@@ -93,6 +119,10 @@ static std::wstring CachePath(const std::wstring& root) {
     path.push_back(drive);
     path += L".json";
     return path;
+}
+
+static std::wstring ProgressPath(const std::wstring& root) {
+    return CachePath(root) + L".progress";
 }
 
 static std::wstring QuoteCommandLineArg(const std::wstring& arg) {
@@ -217,6 +247,39 @@ static std::wstring JsonString(const std::string& json, const char* name) {
     return Utf8ToWide(decoded);
 }
 
+static std::wstring FormatBytesCompact(ULONGLONG bytes) {
+    wchar_t text[64]{};
+    const double mb = static_cast<double>(bytes) / (1024.0 * 1024.0);
+    const double gb = mb / 1024.0;
+    if (gb >= 1.0) swprintf_s(text, L"%.1f GB", gb);
+    else swprintf_s(text, L"%.1f MB", mb);
+    return text;
+}
+
+static std::wstring CacheTimestamp(const std::wstring& path) {
+    WIN32_FILE_ATTRIBUTE_DATA data{};
+    if (!GetFileAttributesExW(path.c_str(), GetFileExInfoStandard, &data)) return L"";
+    FILETIME local{}; SYSTEMTIME st{};
+    if (!FileTimeToLocalFileTime(&data.ftLastWriteTime, &local) || !FileTimeToSystemTime(&local, &st)) return L"";
+    wchar_t text[96]{};
+    swprintf_s(text, L"Ready | Last scan %04u-%02u-%02u %02u:%02u", st.wYear, st.wMonth, st.wDay, st.wHour, st.wMinute);
+    return text;
+}
+
+static bool LoadProgress(DriveCard& d) {
+    std::string json;
+    if (!ReadUtf8File(ProgressPath(d.root), json)) return false;
+    ULONGLONG files = JsonNumber(json, "Files");
+    ULONGLONG bytes = JsonNumber(json, "ScannedBytes");
+    std::wstring current = JsonString(json, "CurrentDirectory");
+    ULONGLONG elapsed = d.scanStartTick ? ((GetTickCount64() - d.scanStartTick) / 1000ULL) : 0;
+    wchar_t prefix[160]{};
+    swprintf_s(prefix, L"Scanning: %llu files | %s | %llus", files, FormatBytesCompact(bytes).c_str(), elapsed);
+    d.progressText = prefix;
+    if (!current.empty()) d.progressText += L"\n" + current;
+    return true;
+}
+
 static bool LoadCache(DriveCard& d) {
     std::string json;
     if (!ReadUtf8File(CachePath(d.root), json)) return false;
@@ -230,6 +293,10 @@ static bool LoadCache(DriveCard& d) {
     d.topFilesPreview = JsonString(json, "TopFilesPreview");
     d.topFoldersPreview = JsonString(json, "TopFoldersPreview");
     d.recommendationPreview = JsonString(json, "RecommendationPreview");
+    d.topFile1Path = JsonString(json, "TopFile1Path");
+    d.topFolder1Path = JsonString(json, "TopFolder1Path");
+    d.recommendationPath = JsonString(json, "RecommendationPath");
+    d.cacheStatus = CacheTimestamp(CachePath(d.root));
     d.cacheLoaded = true;
     d.scanning = false;
     return true;
@@ -254,7 +321,11 @@ static COLORREF SegmentColor(size_t index) {
 class StorageView final : public IShellView {
 public:
     StorageView() : refs_(1), hwnd_(nullptr), gdiplusToken_(0), watermark_(nullptr) { ModuleAddRef(); LoadBrandWatermark(); EnumerateDrives(); }
-    ~StorageView() { if (hwnd_) DestroyWindow(hwnd_); delete watermark_; if (gdiplusToken_) Gdiplus::GdiplusShutdown(gdiplusToken_); ModuleRelease(); }
+    ~StorageView() {
+        if (hwnd_) DestroyWindow(hwnd_);
+        for (auto& d : drives_) { if (d.scanProcess) { CloseHandle(d.scanProcess); d.scanProcess = nullptr; } }
+        delete watermark_; if (gdiplusToken_) Gdiplus::GdiplusShutdown(gdiplusToken_); ModuleRelease();
+    }
 
     IFACEMETHODIMP QueryInterface(REFIID riid, void** ppv) override {
         if (!ppv) return E_POINTER;
@@ -414,7 +485,7 @@ private:
         size_t index = static_cast<size_t>(id - kScanButtonBase);
         if (index >= drives_.size()) return false;
         DriveCard& d = drives_[index];
-        if (!d.scanning) StartScan(d);
+        if (d.scanning) CancelScan(d); else StartScan(d);
         if (d.scanButton) InvalidateRect(d.scanButton, nullptr, TRUE);
         InvalidateRect(hwnd_, nullptr, FALSE);
         return true;
@@ -434,7 +505,7 @@ private:
         DeleteObject(brush);
         SetBkMode(dis->hDC, TRANSPARENT);
         SetTextColor(dis->hDC, RGB(245, 241, 238));
-        const wchar_t* text = drive->scanning ? L"Scanning..." : L"Scan / Refresh";
+        const wchar_t* text = drive->scanning ? L"Cancel Scan" : L"Scan / Refresh";
         RECT textRect = dis->rcItem;
         DrawTextW(dis->hDC, text, -1, &textRect, DT_CENTER | DT_VCENTER | DT_SINGLELINE);
         if (dis->itemState & ODS_FOCUS) {
@@ -445,16 +516,46 @@ private:
         return true;
     }
 
+    void CloseScanProcess(DriveCard& d) {
+        if (d.scanProcess) { CloseHandle(d.scanProcess); d.scanProcess = nullptr; }
+    }
+
     void RefreshCaches() {
         for (auto& d : drives_) {
             RefreshSpace(d);
-            if (d.scanning) {
-                if (LoadCache(d)) {
-                    d.scanning = false;
-                    if (d.scanButton) InvalidateRect(d.scanButton, nullptr, TRUE);
-                }
+            if (!d.scanning) continue;
+            LoadProgress(d);
+            if (!d.scanProcess) continue;
+            DWORD wait = WaitForSingleObject(d.scanProcess, 0);
+            if (wait != WAIT_OBJECT_0) continue;
+            DWORD exitCode = ERROR_GEN_FAILURE;
+            GetExitCodeProcess(d.scanProcess, &exitCode);
+            CloseScanProcess(d);
+            DeleteFileW(ProgressPath(d.root).c_str());
+            d.scanning = false;
+            if (exitCode == 0 && LoadCache(d)) {
+                d.scanError = ERROR_SUCCESS;
+            } else {
+                d.scanError = exitCode ? exitCode : ERROR_GEN_FAILURE;
+                if (d.progressText.empty()) d.progressText = L"Scan failed before a complete cache was written.";
             }
+            if (d.scanButton) InvalidateRect(d.scanButton, nullptr, TRUE);
+            LayoutScanButtons();
         }
+    }
+
+    bool CancelScan(DriveCard& d) {
+        if (!d.scanning) return false;
+        if (d.scanProcess) {
+            TerminateProcess(d.scanProcess, ERROR_CANCELLED);
+            WaitForSingleObject(d.scanProcess, 3000);
+            CloseScanProcess(d);
+        }
+        DeleteFileW(ProgressPath(d.root).c_str());
+        d.scanning = false;
+        d.scanError = ERROR_CANCELLED;
+        d.progressText = L"Scan cancelled. No files were changed.";
+        return true;
     }
 
     bool StartScan(DriveCard& d) {
@@ -464,9 +565,12 @@ private:
             d.scanError = GetLastError();
             return false;
         }
+        CloseScanProcess(d);
         std::wstring cache = CachePath(d.root);
+        std::wstring progress = ProgressPath(d.root);
         DeleteFileW(cache.c_str());
-        std::wstring cmd = QuoteCommandLineArg(scanner) + L" " + QuoteCommandLineArg(d.root) + L" " + QuoteCommandLineArg(cache);
+        DeleteFileW(progress.c_str());
+        std::wstring cmd = QuoteCommandLineArg(scanner) + L" " + QuoteCommandLineArg(d.root) + L" " + QuoteCommandLineArg(cache) + L" " + QuoteCommandLineArg(progress);
         std::vector<wchar_t> mutableCmd(cmd.begin(), cmd.end()); mutableCmd.push_back(L'\0');
         STARTUPINFOW si{}; si.cb = sizeof(si); si.dwFlags = STARTF_USESHOWWINDOW; si.wShowWindow = SW_HIDE;
         PROCESS_INFORMATION pi{};
@@ -474,12 +578,29 @@ private:
             d.scanError = GetLastError();
             return false;
         }
-        CloseHandle(pi.hThread); CloseHandle(pi.hProcess);
+        CloseHandle(pi.hThread);
+        d.scanProcess = pi.hProcess;
+        d.scanStartTick = GetTickCount64();
         d.scanError = ERROR_SUCCESS;
         d.scanning = true; d.cacheLoaded = false; d.categories = CategoryBytes{};
+        d.progressText = L"Starting scan..."; d.cacheStatus.clear();
         d.topFilesPreview.clear(); d.topFoldersPreview.clear(); d.recommendationPreview.clear();
+        d.topFile1Path.clear(); d.topFolder1Path.clear(); d.recommendationPath.clear();
         if (d.scanButton) InvalidateRect(d.scanButton, nullptr, TRUE);
+        LayoutScanButtons();
         return true;
+    }
+
+    static void OpenExplorerTarget(const std::wstring& path, bool preferSelect) {
+        if (path.empty()) return;
+        DWORD attrs = GetFileAttributesW(path.c_str());
+        const bool isDirectory = attrs != INVALID_FILE_ATTRIBUTES && (attrs & FILE_ATTRIBUTE_DIRECTORY);
+        if (preferSelect && !isDirectory) {
+            std::wstring args = L"/select," + QuoteCommandLineArg(path);
+            ShellExecuteW(nullptr, L"open", L"explorer.exe", args.c_str(), nullptr, SW_SHOWNORMAL);
+        } else {
+            ShellExecuteW(nullptr, L"open", path.c_str(), nullptr, nullptr, SW_SHOWNORMAL);
+        }
     }
 
     void Click(int x, int y) {
@@ -489,11 +610,20 @@ private:
         int top = 88;
         for (auto& d : drives_) {
             CardLayout layout = BuildCardLayout(client, top, d.cacheLoaded);
-            if (PtInRect(&layout.scanButton, p) && !d.scanning) {
-                StartScan(d); InvalidateRect(hwnd_, nullptr, FALSE); break;
+            if (d.cacheLoaded) {
+                if (PtInRect(&layout.openFileAction, p) && !d.topFile1Path.empty()) { OpenExplorerTarget(d.topFile1Path, true); return; }
+                if (PtInRect(&layout.openFolderAction, p) && !d.topFolder1Path.empty()) { OpenExplorerTarget(d.topFolder1Path, false); return; }
+                if (PtInRect(&layout.reviewAction, p) && !d.recommendationPath.empty()) { OpenExplorerTarget(d.recommendationPath, true); return; }
             }
             top += layout.cardHeight + 18;
         }
+    }
+
+    static void DrawActionChip(HDC dc, const RECT& rect, const wchar_t* text, bool enabled, bool accent) {
+        COLORREF fill = enabled ? (accent ? RGB(200, 90, 0) : RGB(90, 60, 64)) : RGB(35, 30, 31);
+        HBRUSH brush = CreateSolidBrush(fill); FillRect(dc, &rect, brush); DeleteObject(brush);
+        SetBkMode(dc, TRANSPARENT); SetTextColor(dc, enabled ? RGB(245, 241, 238) : RGB(110, 105, 102));
+        RECT r = rect; DrawTextW(dc, text, -1, &r, DT_CENTER | DT_VCENTER | DT_SINGLELINE | DT_END_ELLIPSIS);
     }
 
     void DrawCardBackgrounds(HDC dc, const RECT& client) {
@@ -539,6 +669,10 @@ private:
             std::wstring freeText = FormatGb(d.free), totalText = FormatGb(d.total);
             swprintf_s(header, L"%c:    %s free of %s", d.root[0], freeText.c_str(), totalText.c_str());
             SetTextColor(dc, RGB(245, 241, 238)); TextOutW(dc, left + 18, top + 16, header, static_cast<int>(wcslen(header)));
+            if (d.cacheLoaded && !d.cacheStatus.empty()) {
+                SetTextColor(dc, RGB(175, 168, 163));
+                TextOutW(dc, left + 250, top + 16, d.cacheStatus.c_str(), static_cast<int>(d.cacheStatus.size()));
+            }
 
             RECT bar = layout.bar;
             HBRUSH usedBase = CreateSolidBrush(RGB(59, 39, 41)); FillRect(dc, &bar, usedBase); DeleteObject(usedBase);
@@ -582,7 +716,8 @@ private:
                 }
             } else {
                 std::wstring msg;
-                if (d.scanning) msg = L"Scanning in background... Explorer remains responsive.";
+                if (d.scanning) msg = d.progressText.empty() ? L"Scanning in background... Explorer remains responsive." : d.progressText;
+                else if (d.scanError == ERROR_CANCELLED) msg = d.progressText.empty() ? L"Scan cancelled. No files were changed." : d.progressText;
                 else if (d.scanError != ERROR_SUCCESS) {
                     wchar_t errorText[160]{};
                     swprintf_s(errorText, L"Scanner launch failed (Windows error %lu). Try Scan / Refresh again.", d.scanError);
@@ -636,6 +771,9 @@ private:
                     RECT reviewRect{ left + 18, iy + 202, right - 18, iy + 230 };
                     DrawTextW(dc, (d.recommendationPreview.empty() ? L"Review only; 986 never auto-deletes." : d.recommendationPreview.c_str()), -1, &reviewRect, DT_LEFT | DT_TOP | DT_WORDBREAK | DT_END_ELLIPSIS);
                 }
+                DrawActionChip(dc, layout.openFileAction, L"Open #1 File", !d.topFile1Path.empty(), false);
+                DrawActionChip(dc, layout.openFolderAction, L"Open #1 Folder", !d.topFolder1Path.empty(), false);
+                DrawActionChip(dc, layout.reviewAction, L"Review", !d.recommendationPath.empty(), true);
             }
 
             top += cardH + 18;

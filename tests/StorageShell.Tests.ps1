@@ -35,6 +35,10 @@ foreach ($marker in 'TopFilesPreview','TopFoldersPreview','RecommendationPreview
     if ($cppText -notmatch [regex]::Escape($marker)) { throw "Missing Storage Intelligence UI marker: $marker" }
 }
 if ($cppText -match 'SHFileOperation|IFileOperation|RemoveDirectoryW') { throw 'Storage Intelligence P1 must remain review-only.' }
+foreach ($marker in 'CancelScan','TerminateProcess','LoadProgress','ProgressPath','TopFile1Path','TopFolder1Path','RecommendationPath','Open #1 File','Open #1 Folder','Review','OpenExplorerTarget','CacheTimestamp') {
+    if ($cppText -notmatch [regex]::Escape($marker)) { throw "Missing Storage Intelligence P2 marker: $marker" }
+}
+if ($cppText -match 'DeleteFileW\(d\.topFile1Path|DeleteFileW\(d\.topFolder1Path|DeleteFileW\(d\.recommendationPath') { throw 'Storage review actions must never delete reviewed paths.' }
 if ($cppText -notmatch [regex]::Escape('DrawCardBackgrounds(dc, client);')) { throw '986 Storage two-pass card background render is missing.' }
 $cardLayerCall = $cppText.IndexOf('DrawCardBackgrounds(dc, client);')
 $watermarkCall = $cppText.IndexOf('DrawBrandWatermark(dc, client);')

@@ -2,6 +2,18 @@
 
 All notable project changes are documented here.
 
+## [0.8.1-alpha.2] - 2026-09-15
+
+### Added
+- Added live 986 Storage scan progress (files, bytes, elapsed time and current folder) using a sidecar progress file.
+- Added Cancel Scan with scoped termination of only the active 986 scanner process; cancellation never deletes user data.
+- Added cache timestamp/status so completed drive scans show when their current cache was generated.
+- Added safe Storage Intelligence review actions for the largest file, largest folder and highest-impact recommendation. Review actions only open/select locations in Explorer.
+
+### Safety
+- Review remains non-destructive: no reviewed file/folder path is ever passed to delete/remove APIs.
+- Scanner process handles are retained only while active and closed on completion/cancel/destruction.
+
 ## [0.8.1-alpha.1] - 2026-09-15
 
 ### Fixed
