@@ -190,13 +190,16 @@ function Invoke-986ResolutionTrial {
 
     Add-Type -AssemblyName PresentationFramework
     Add-Type -AssemblyName WindowsBase
+    Add-Type -AssemblyName PresentationCore
+    $brush = New-Object Windows.Media.BrushConverter
     $window = New-Object Windows.Window
     $window.Title = '986 Custom Resolution - Keep this mode?'
     $window.Width = 470; $window.Height = 220; $window.WindowStartupLocation = 'CenterScreen'; $window.Topmost = $true
+    $window.Background = $brush.ConvertFromString('#050505'); $window.Foreground = $brush.ConvertFromString('#F5F1EE')
     $grid = New-Object Windows.Controls.Grid
-    $text = New-Object Windows.Controls.TextBlock; $text.Margin='22'; $text.FontSize=18; $text.TextWrapping='Wrap'
-    $keep = New-Object Windows.Controls.Button; $keep.Content='Keep'; $keep.Width=120; $keep.Height=36; $keep.HorizontalAlignment='Left'; $keep.Margin='55,125,0,0'
-    $revert = New-Object Windows.Controls.Button; $revert.Content='Revert'; $revert.Width=120; $revert.Height=36; $revert.HorizontalAlignment='Right'; $revert.Margin='0,125,55,0'
+    $text = New-Object Windows.Controls.TextBlock; $text.Margin='22'; $text.FontSize=18; $text.TextWrapping='Wrap'; $text.Foreground=$brush.ConvertFromString('#F5F1EE')
+    $keep = New-Object Windows.Controls.Button; $keep.Content='Keep'; $keep.Width=120; $keep.Height=36; $keep.HorizontalAlignment='Left'; $keep.Margin='55,125,0,0'; $keep.Background=$brush.ConvertFromString('#C85A00'); $keep.Foreground=$brush.ConvertFromString('#F5F1EE'); $keep.BorderBrush=$brush.ConvertFromString('#FF8A00')
+    $revert = New-Object Windows.Controls.Button; $revert.Content='Revert'; $revert.Width=120; $revert.Height=36; $revert.HorizontalAlignment='Right'; $revert.Margin='0,125,55,0'; $revert.Background=$brush.ConvertFromString('#7A414B'); $revert.Foreground=$brush.ConvertFromString('#F5F1EE'); $revert.BorderBrush=$brush.ConvertFromString('#B76E79')
     $grid.Children.Add($text) | Out-Null; $grid.Children.Add($keep) | Out-Null; $grid.Children.Add($revert) | Out-Null; $window.Content=$grid
     $trialState = [pscustomobject]@{ Choice='timeout'; Remaining=[int]$Seconds }
     $timer = New-Object Windows.Threading.DispatcherTimer; $timer.Interval=[TimeSpan]::FromSeconds(1)

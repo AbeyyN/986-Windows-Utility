@@ -12,6 +12,7 @@
 static HINSTANCE g_instance = nullptr;
 static long g_moduleRefs = 0;
 static const wchar_t kStorageViewClass[] = L"986StorageViewWindow";
+static const COLORREF k986Black = RGB(0, 0, 0);
 
 static void ModuleAddRef() { InterlockedIncrement(&g_moduleRefs); }
 static void ModuleRelease() { InterlockedDecrement(&g_moduleRefs); }
@@ -167,9 +168,9 @@ static std::wstring FormatGb(ULONGLONG bytes) {
 
 static COLORREF SegmentColor(size_t index) {
     static const COLORREF colors[] = {
-        RGB(244, 114, 182), RGB(96, 165, 250), RGB(250, 204, 21),
-        RGB(52, 211, 153), RGB(167, 139, 250), RGB(248, 113, 113),
-        RGB(148, 163, 184), RGB(55, 65, 81), RGB(31, 41, 55)
+        RGB(183, 110, 121), RGB(255, 138, 0), RGB(216, 160, 168),
+        RGB(200, 90, 0), RGB(122, 65, 75), RGB(175, 168, 163),
+        RGB(90, 60, 64), RGB(59, 39, 41), RGB(23, 18, 19)
     };
     return colors[index < ARRAYSIZE(colors) ? index : ARRAYSIZE(colors) - 1];
 }
@@ -208,7 +209,7 @@ public:
         wc.hInstance = g_instance;
         wc.lpszClassName = kStorageViewClass;
         wc.hCursor = LoadCursorW(nullptr, IDC_ARROW);
-        wc.hbrBackground = CreateSolidBrush(RGB(15, 23, 42));
+        wc.hbrBackground = CreateSolidBrush(RGB(0, 0, 0));
         ATOM atom = RegisterClassW(&wc);
         if (!atom && GetLastError() != ERROR_CLASS_ALREADY_EXISTS) return HRESULT_FROM_WIN32(GetLastError());
         hwnd_ = CreateWindowExW(0, kStorageViewClass, L"986 Storage", WS_CHILD | WS_VISIBLE,
@@ -326,13 +327,13 @@ private:
             if (d.scanButton == dis->hwndItem) { drive = &d; break; }
         }
         if (!drive) return false;
-        COLORREF fill = drive->scanning ? RGB(71, 85, 105) : RGB(234, 88, 12);
-        if ((dis->itemState & ODS_SELECTED) && !drive->scanning) fill = RGB(194, 65, 12);
+        COLORREF fill = drive->scanning ? RGB(122, 65, 75) : RGB(255, 138, 0);
+        if ((dis->itemState & ODS_SELECTED) && !drive->scanning) fill = RGB(200, 90, 0);
         HBRUSH brush = CreateSolidBrush(fill);
         FillRect(dis->hDC, &dis->rcItem, brush);
         DeleteObject(brush);
         SetBkMode(dis->hDC, TRANSPARENT);
-        SetTextColor(dis->hDC, RGB(255, 255, 255));
+        SetTextColor(dis->hDC, RGB(245, 241, 238));
         const wchar_t* text = drive->scanning ? L"Scanning..." : L"Scan / Refresh";
         RECT textRect = dis->rcItem;
         DrawTextW(dis->hDC, text, -1, &textRect, DT_CENTER | DT_VCENTER | DT_SINGLELINE);
@@ -397,8 +398,8 @@ private:
     void Paint(HWND hwnd) {
         PAINTSTRUCT ps{}; HDC dc = BeginPaint(hwnd, &ps);
         RECT client{}; GetClientRect(hwnd, &client);
-        HBRUSH bg = CreateSolidBrush(RGB(15, 23, 42)); FillRect(dc, &client, bg); DeleteObject(bg);
-        SetBkMode(dc, TRANSPARENT); SetTextColor(dc, RGB(241, 245, 249));
+        HBRUSH bg = CreateSolidBrush(RGB(0, 0, 0)); FillRect(dc, &client, bg); DeleteObject(bg);
+        SetBkMode(dc, TRANSPARENT); SetTextColor(dc, RGB(216, 160, 168));
         HFONT titleFont = CreateFontW(24, 0, 0, 0, FW_SEMIBOLD, FALSE, FALSE, FALSE, DEFAULT_CHARSET, 0, 0, CLEARTYPE_QUALITY, 0, L"Segoe UI");
         HFONT textFont = CreateFontW(17, 0, 0, 0, FW_NORMAL, FALSE, FALSE, FALSE, DEFAULT_CHARSET, 0, 0, CLEARTYPE_QUALITY, 0, L"Segoe UI");
         HFONT old = static_cast<HFONT>(SelectObject(dc, titleFont));
@@ -418,14 +419,14 @@ private:
             const int labelY = layout.labelY;
             const int buttonTop = layout.buttonTop;
             const int cardH = layout.cardHeight;
-            HBRUSH cardBrush = CreateSolidBrush(RGB(30, 41, 59)); FillRect(dc, &layout.card, cardBrush); DeleteObject(cardBrush);
+            HBRUSH cardBrush = CreateSolidBrush(RGB(18, 14, 15)); FillRect(dc, &layout.card, cardBrush); DeleteObject(cardBrush);
             wchar_t header[128]{};
             std::wstring freeText = FormatGb(d.free), totalText = FormatGb(d.total);
             swprintf_s(header, L"%c:    %s free of %s", d.root[0], freeText.c_str(), totalText.c_str());
-            SetTextColor(dc, RGB(248, 250, 252)); TextOutW(dc, left + 18, top + 16, header, static_cast<int>(wcslen(header)));
+            SetTextColor(dc, RGB(245, 241, 238)); TextOutW(dc, left + 18, top + 16, header, static_cast<int>(wcslen(header)));
 
             RECT bar = layout.bar;
-            HBRUSH usedBase = CreateSolidBrush(RGB(71, 85, 105)); FillRect(dc, &bar, usedBase); DeleteObject(usedBase);
+            HBRUSH usedBase = CreateSolidBrush(RGB(59, 39, 41)); FillRect(dc, &bar, usedBase); DeleteObject(usedBase);
             ULONGLONG used = d.total > d.free ? d.total - d.free : 0;
             ULONGLONG values[] = { d.categories.apps, d.categories.videos, d.categories.pictures, d.categories.documents,
                 d.categories.audio, d.categories.system, d.categories.other };
@@ -444,15 +445,15 @@ private:
             if (d.total && residual) {
                 int w = static_cast<int>((static_cast<long double>(residual) / d.total) * (bar.right - bar.left));
                 RECT seg{ x, bar.top, min(x + w, bar.right), bar.bottom };
-                HBRUSH rb = CreateSolidBrush(RGB(75, 85, 99)); FillRect(dc, &seg, rb); DeleteObject(rb);
+                HBRUSH rb = CreateSolidBrush(RGB(59, 39, 41)); FillRect(dc, &seg, rb); DeleteObject(rb);
             }
             if (d.total && d.free) {
                 int w = static_cast<int>((static_cast<long double>(d.free) / d.total) * (bar.right - bar.left));
                 RECT seg{ max(bar.left, bar.right - w), bar.top, bar.right, bar.bottom };
-                HBRUSH fb = CreateSolidBrush(RGB(15, 23, 42)); FillRect(dc, &seg, fb); DeleteObject(fb);
+                HBRUSH fb = CreateSolidBrush(RGB(0, 0, 0)); FillRect(dc, &seg, fb); DeleteObject(fb);
             }
 
-            SetTextColor(dc, RGB(203, 213, 225));
+            SetTextColor(dc, RGB(175, 168, 163));
             const wchar_t* names[] = { L"Apps", L"Videos", L"Pictures", L"Documents", L"Audio", L"System", L"Other" };
             if (d.cacheLoaded) {
                 const int columnWidth = max(1, contentWidth / labelColumns);

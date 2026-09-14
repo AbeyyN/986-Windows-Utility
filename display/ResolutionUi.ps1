@@ -15,13 +15,18 @@ function Show-986ResolutionWindow {
     $provider = if ($adapter.Count) { [string]$adapter[0].Provider } else { 'Windows-Driver' }
 
     [xml]$xaml = @'
-<Window xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation" Title="986 Custom Resolution"
- Height="460" Width="620" MinHeight="420" MinWidth="560" Background="#0B1220" Foreground="#E5E7EB" WindowStartupLocation="CenterOwner">
+<Window xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation" xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml" Title="986 Custom Resolution"
+ Height="460" Width="620" MinHeight="420" MinWidth="560" Background="#050505" Foreground="#F5F1EE" WindowStartupLocation="CenterOwner">
+ <Window.Resources>
+  <Style TargetType="Button"><Setter Property="Background" Value="#171213"/><Setter Property="Foreground" Value="#F5F1EE"/><Setter Property="BorderBrush" Value="#5A3C40"/></Style>
+  <Style TargetType="TextBox"><Setter Property="Background" Value="#0D0D0F"/><Setter Property="Foreground" Value="#F5F1EE"/><Setter Property="BorderBrush" Value="#5A3C40"/></Style>
+  <Style TargetType="ComboBox"><Setter Property="Background" Value="#171213"/><Setter Property="Foreground" Value="#F5F1EE"/><Setter Property="BorderBrush" Value="#5A3C40"/></Style>
+ </Window.Resources>
  <Grid Margin="20">
   <Grid.RowDefinitions><RowDefinition Height="Auto"/><RowDefinition Height="Auto"/><RowDefinition Height="Auto"/><RowDefinition Height="Auto"/><RowDefinition Height="Auto"/><RowDefinition Height="*"/></Grid.RowDefinitions>
-  <TextBlock Text="986 CUSTOM RESOLUTION" FontSize="24" FontWeight="Bold" Foreground="#F59E0B"/>
+  <TextBlock Text="986 CUSTOM RESOLUTION" FontSize="24" FontWeight="Bold" Foreground="#D8A0A8"/>
   <StackPanel Grid.Row="1" Margin="0,16,0,0"><TextBlock Text="Display"/><ComboBox x:Name="DisplayPicker" Height="32" Margin="0,4,0,0"/></StackPanel>
-  <TextBlock x:Name="CurrentText" Grid.Row="2" Margin="0,14,0,0" Foreground="#9CA3AF"/>
+  <TextBlock x:Name="CurrentText" Grid.Row="2" Margin="0,14,0,0" Foreground="#AFA8A3"/>
   <Grid Grid.Row="3" Margin="0,16,0,0"><Grid.ColumnDefinitions><ColumnDefinition/><ColumnDefinition/><ColumnDefinition/></Grid.ColumnDefinitions>
    <StackPanel><TextBlock Text="Width"/><TextBox x:Name="WidthBox" Height="30" Margin="0,4,8,0"/></StackPanel>
    <StackPanel Grid.Column="1"><TextBlock Text="Height"/><TextBox x:Name="HeightBox" Height="30" Margin="0,4,8,0"/></StackPanel>
@@ -29,10 +34,10 @@ function Show-986ResolutionWindow {
   </Grid>
   <WrapPanel Grid.Row="4" Margin="0,18,0,0">
    <Button x:Name="TestButton" Content="Test Support" Padding="14,8" Margin="0,0,8,0"/>
-   <Button x:Name="TrialButton" Content="Apply 15s Trial" Padding="14,8" Margin="0,0,8,0" Background="#92400E" Foreground="White"/>
+   <Button x:Name="TrialButton" Content="Apply 15s Trial" Padding="14,8" Margin="0,0,8,0" Background="#C85A00" Foreground="White" BorderBrush="#FF8A00"/>
    <Button x:Name="UndoButton" Content="Undo to Original" Padding="14,8"/>
   </WrapPanel>
-  <TextBox x:Name="StatusBox" Grid.Row="5" Margin="0,16,0,0" IsReadOnly="True" TextWrapping="Wrap" VerticalScrollBarVisibility="Auto" Background="#050A12" Foreground="#D1D5DB" BorderBrush="#273244"/>
+  <TextBox x:Name="StatusBox" Grid.Row="5" Margin="0,16,0,0" IsReadOnly="True" TextWrapping="Wrap" VerticalScrollBarVisibility="Auto" Background="#050505" Foreground="#F5F1EE" BorderBrush="#3B2729"/>
  </Grid>
 </Window>
 '@

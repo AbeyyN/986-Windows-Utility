@@ -2,6 +2,19 @@
 
 All notable project changes are documented here.
 
+## [0.8.0-alpha.1] - 2026-09-14
+
+### Fixed
+- Fixed the `986 Custom Resolution` launch failure by declaring the XAML `x` namespace required by named controls.
+
+### Changed
+- Started the `Rose Gold Intelligence` visual system across the main WinUtil shell, Custom Resolution dialog and native 986 Storage view.
+- Added the fail-safe 30% main-shell watermark host for the canonical `assets\AbeyyTechXy-logo.png` brand asset.
+- Recolored 986 Storage to a pure-black base with rose-gold/orange category and action accents.
+
+### Pending
+- 986 Storage 50% official-logo watermark is still pending import of the exact approved logo asset; no substitute logo is used.
+
 ## [0.7.0] - 2026-09-13
 
 ### Fixed
