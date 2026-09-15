@@ -1,21 +1,22 @@
 # Roadmap
 
-## v0.1.x — Foundation
+**Current stable:** `v0.8.1`
+
+## v0.1.x — Foundation (shipped)
 
 - stabilize WPF shell and reversible registry engine
 - expand static validation and release packaging
-- document every shipped tweak and side effect
-- improve snapshot integrity and recovery messages
+- document shipped tweaks and side effects
+- establish snapshot integrity and recovery behavior
 
 ## v0.2 — Tweak Intelligence (shipped)
 
-- read-only registry, policy, service and scheduled-task observations
+- read-only Registry, Policy, Service and Scheduled Task observations
 - classify states as Windows-like, 986 Managed, WinUtil-like, Custom or Unknown
 - JSON export and headless audit mode
 - never claim exact tool attribution without reliable evidence
-- next v0.2.x: confidence metadata and broader signature coverage
 
-## v0.3 — Diagnostics & Repair (implemented)
+## v0.3 — Diagnostics & Repair (shipped)
 
 - Windows health dashboard
 - system, storage, Defender, network and servicing diagnostics
@@ -43,34 +44,50 @@
 
 ## v0.6 — Windows Tweaks Expansion Wave 2 (shipped)
 
-- audit current WinUtil tweak catalog as reference, not as source-of-truth behavior
+- audit the WinUtil tweak catalog as reference, not as source-of-truth behavior
 - ship only ordinary Windows preferences that remain manually user-editable
 - add Accessibility, Taskbar, Multitasking and Storage preferences
 - require real Windows Apply/Verify/Undo exact-original evidence before promotion
-- keep all new Wave 2 tweaks optional; do not silently change the 986 Balanced profile
+- keep all Wave 2 tweaks optional; do not silently change the 986 Balanced profile
 
-## v0.7 — Storage View + Custom Resolution (in development)
+## v0.7 — Storage View + Custom Resolution (shipped)
 
-- add optional `986 Storage` namespace under This PC using per-user reversible Shell registration
-- keep recursive storage scanning out of `explorer.exe`; use a read-only out-of-process scanner
-- render Android-style per-volume category breakdowns for Apps, Videos, Pictures, Documents, Audio, System, Other and Free
-- add advanced Custom Resolution capability with Windows existing-mode support plus AMD ADLX, NVIDIA NVAPI and Intel IGCL provider paths
-- require trial/confirmation/automatic-revert before any custom display mode can be kept
-- never use EDID registry hacks, driver patching, watchdog enforcement or forced unsupported panel modes
-- keep the tweak-first v0.6 baseline unchanged while these optional advanced features mature
+- optional `986 Storage` namespace under This PC using reversible per-user Shell registration
+- out-of-process read-only storage scanner; no recursive scanning inside `explorer.exe`
+- Android-style per-volume category breakdowns for Apps, Videos, Pictures, Documents, Audio, System, Other and Free
+- responsive native Storage cards and real Scan / Refresh control inside File Explorer
+- Custom Resolution driver test path using `CDS_TEST`
+- 15-second Keep/Revert trial with automatic fallback and exact original-resolution Undo
+- no EDID registry hacks, driver patching, watchdog enforcement or forced unsupported panel modes
+- physical Windows validation for Storage registration/scanning and Resolution trial/revert/Keep/Undo before stable promotion
 
-## v0.7 — Storage View + Custom Resolution (release candidate)
+## v0.8.0 — Rose Gold Intelligence + Storage Intelligence P1 (shipped)
 
-- Android-style segmented storage cards inside an optional This PC namespace view
-- out-of-process scanner; no permanent background service
-- per-user reversible shell registration with foreign-collision guard
-- arbitrary driver-tested width/height/refresh via CDS_TEST
-- 15-second Keep/Revert trial with one-shot crash fallback reverter
-- exact original resolution snapshot + Undo; no auto-reapply
+- official AbeyyTechXy branding and Rose Gold + Black + Orange visual system
+- readable dark-theme profile/display dropdowns and corrected watermark z-order
+- Storage Intelligence P1 with Top 10 largest files, Top 10 largest root folders, compact Top 3 previews and review-only recommendations
+- width-driven Custom Resolution input with automatic aspect-ratio-preserving Height
+- clear suitability guidance for external monitors/desktop displays and built-in laptop-panel limitations
+- retain the driver test + timed reversible trial before keeping any display mode
+- keep Storage Intelligence analysis/review-only with no automatic file deletion
 
-## v1.0 — Stable
+## v0.8.1 — Storage Intelligence P2 + Update Center (shipped)
 
-- documented compatibility matrix
-- mature rollback and recovery path
+- live Storage scan progress with files, bytes, elapsed time and current folder
+- scoped Cancel Scan that targets only the active 986 scanner process
+- cache age/state for completed Storage scans
+- safe largest-file, largest-folder and recommendation review actions
+- JSON Storage report export to the user Documents folder
+- 986 Update Center using the checksum-verified stable bootstrap path
+- block in-place updates while the current Storage shell DLL is loaded; never force-restart Explorer
+- corrected Storage branding composition with user-approved 25% Storage watermark opacity
+- stable promotion only after Windows CI, native Storage build, physical scan/cancel validation, loaded-DLL update blocking and Explorer preview validation
+
+## v1.0 — Stable Platform (planned)
+
+- documented compatibility matrix across supported Windows versions and hardware classes
+- mature rollback and disaster-recovery path for every supported mutation
 - signed/reproducible release pipeline target
-- stable contributor and security process
+- stronger release provenance and binary-distribution architecture
+- stable contributor, security and long-term maintenance process
+- continue the Never-Lock User contract as a release invariant
