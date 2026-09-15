@@ -20,7 +20,7 @@ foreach ($entry in @(
     catch { throw "$($entry.Name) PowerShell syntax is invalid: $($_.Exception.Message)" }
 }
 
-foreach ($marker in 'Get-986InstalledVersion','Copy-986MergeItem','Install-986StoragePayload','storage\versions','repairMode','Refusing to overwrite a possibly loaded DLL','Explorer restart is not forced') {
+foreach ($marker in 'Get-986InstalledVersion','Copy-986MergeItem','Install-986StoragePayload','versionedShellDir','repairMode','Refusing to overwrite a possibly loaded DLL','Explorer restart is not forced') {
     if ($bootstrapText -notmatch [regex]::Escape($marker)) { throw "Missing bootstrap update-safety marker: $marker" }
 }
 if ($bootstrapText -notmatch [regex]::Escape('$installedVersion -eq $releaseVersion')) {
@@ -30,7 +30,7 @@ if ($bootstrapText -match '(?i)Stop-Process[^\r\n]*explorer|taskkill[^\r\n]*expl
     throw 'Bootstrap must never force-restart Explorer to replace a loaded Storage shell DLL.'
 }
 
-foreach ($marker in 'Resolve-986StorageDllPath','storage\versions','RegisteredDll') {
+foreach ($marker in 'Resolve-986StorageDllPath','versionsRoot','RegisteredDll') {
     if ($registrationText -notmatch [regex]::Escape($marker)) { throw "Missing version-aware Storage registration marker: $marker" }
 }
 
