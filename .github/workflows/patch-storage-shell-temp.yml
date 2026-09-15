@@ -1,0 +1,58 @@
+name: Temporary Storage shell patch
+
+on:
+  push:
+    branches:
+      - fix/storage-shell-update-lifecycle
+    paths:
+      - .github/workflows/patch-storage-shell-temp.yml
+
+permissions:
+  contents: write
+
+jobs:
+  patch:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: fix/storage-shell-update-lifecycle
+          fetch-depth: 0
+      - name: Apply exact idle repaint fix
+        shell: python
+        run: |
+          from pathlib import Path
+          path = Path('storage/shell/StorageShell.cpp')
+          text = path.read_text(encoding='utf-8')
+          old = '            case WM_TIMER: self->RefreshCaches(); InvalidateRect(hwnd, nullptr, FALSE); return 0;'
+          new = '''            case WM_TIMER: {
+                          bool repaint = false;
+                          for (const auto& d : self->drives_) {
+                              if (d.scanning) { repaint = true; break; }
+                          }
+                          self->RefreshCaches();
+                          if (repaint) InvalidateRect(hwnd, nullptr, FALSE);
+                          return 0;
+                      }'''
+          count = text.count(old)
+          if count != 1:
+              raise SystemExit(f'Expected exactly one idle timer repaint pattern; found {count}')
+          path.write_text(text.replace(old, new), encoding='utf-8', newline='\n')
+      - name: Verify patch
+        shell: bash
+        run: |
+          set -euo pipefail
+          grep -F 'bool repaint = false;' storage/shell/StorageShell.cpp
+          grep -F 'if (d.scanning) { repaint = true; break; }' storage/shell/StorageShell.cpp
+          grep -F 'if (repaint) InvalidateRect(hwnd, nullptr, FALSE);' storage/shell/StorageShell.cpp
+          ! grep -F 'case WM_TIMER: self->RefreshCaches(); InvalidateRect(hwnd, nullptr, FALSE); return 0;' storage/shell/StorageShell.cpp
+      - name: Commit patch
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add storage/shell/StorageShell.cpp
+          git diff --cached --check
+          git commit -m 'fix: stop idle Storage view repaint flicker'
+          git push origin HEAD:fix/storage-shell-update-lifecycle
