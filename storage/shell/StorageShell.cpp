@@ -428,7 +428,15 @@ private:
                 if (self->DrawScanButton(reinterpret_cast<DRAWITEMSTRUCT*>(lp))) return TRUE;
                 break;
             case WM_LBUTTONUP: self->Click(GET_X_LPARAM(lp), GET_Y_LPARAM(lp)); return 0;
-            case WM_TIMER: self->RefreshCaches(); InvalidateRect(hwnd, nullptr, FALSE); return 0;
+            case WM_TIMER: {
+                bool repaint = false;
+                for (const auto& d : self->drives_) {
+                    if (d.scanning) { repaint = true; break; }
+                }
+                self->RefreshCaches();
+                if (repaint) InvalidateRect(hwnd, nullptr, FALSE);
+                return 0;
+            }
             case WM_ERASEBKGND: return 1;
         }
         return DefWindowProcW(hwnd, msg, wp, lp);
