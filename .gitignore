@@ -13,3 +13,4 @@ storage/bin/
 StorageShell.obj
 StorageShell.lib
 StorageShell.exp
+HANDOFF.md
