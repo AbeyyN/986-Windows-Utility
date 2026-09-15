@@ -9,7 +9,7 @@ An open-source Windows utility by **AbeyyTechXy / AbeyyN** focused on safe, insp
 [![License](https://img.shields.io/github/license/AbeyyN/986-Windows-Utility?style=for-the-badge)](LICENSE)
 [![Contributors](https://img.shields.io/github/contributors/AbeyyN/986-Windows-Utility?style=for-the-badge)](https://github.com/AbeyyN/986-Windows-Utility/graphs/contributors)
 
-> **Project status:** stable v0.7.0. 986 remains a tweak-first Windows utility; active tweaks are user-editable preferences with no persistent enforcement.
+> **Project status:** stable v0.8.1. 986 remains a tweak-first Windows utility; active tweaks are user-editable preferences with no persistent enforcement.
 
 ## Why 986 Windows Utility?
 
@@ -22,7 +22,8 @@ Detect current state → Snapshot original state → Apply → Verify
 ```
 
 This is the foundation of **986 State-Aware Reversible Tweaks**.
-## v0.7.0 features
+
+## v0.8.1 features
 
 - Windows-native PowerShell 5.1 + WPF GUI
 - **30 active user-editable preference tweaks** across Explorer, Privacy, Performance, Gaming, Taskbar, Start, Personalization, Accessibility, Multitasking and Storage
@@ -32,8 +33,12 @@ This is the foundation of **986 State-Aware Reversible Tweaks**.
 - selecting a profile only changes checkbox selection; it never applies tweaks automatically
 - **Never-Lock User baseline:** active catalog contains no Group Policy paths, Apply is one-shot, and manual Windows/Registry changes remain in control
 - Wave 2 adds Always show scrollbars, battery percentage, taskbar alignment, Snap windows and Storage Sense preferences
+- **Rose Gold + Black + Orange visual system** with official AbeyyTechXy branding
 - **986 Storage View** inside File Explorer with category-based disk usage scanning
-- **Custom Resolution** with test/apply, 15-second safety revert, Keep and exact Undo workflow
+- **986 Storage Intelligence P1/P2** with largest-file/folder analysis, review-only recommendations, live scan progress, scoped cancel, cache state and JSON report export
+- **986 Update Center** using the checksum-verified stable bootstrap path; in-place update is blocked while the Storage shell DLL is loaded
+- **Custom Resolution** with width-driven aspect-ratio preservation, driver test/apply, 15-second safety revert, Keep and exact Undo workflow
+- **986 Storage watermark:** user-approved 25% opacity; main application watermark remains 30%
 - optional Windows 11 taskbar `End task` right-click action
   - Warning: ending a task can discard unsaved work in that application.
 - **986 Tweak Intelligence Engine** with read-only Registry, Policy, Service and Scheduled Task observations
@@ -84,6 +89,7 @@ Add `-DoctorJson` to export a privacy-hardened Doctor report.
 A tweak is not considered complete merely because it can write a registry value. New tweak contributions are expected to define or document:
 
 `Detect` · `Snapshot` · `Apply` · `Verify` · `Undo` · `Verify Undo` · risk · supported Windows versions · side effects.
+
 ## Project direction
 
 The roadmap extends beyond a debloater into a Windows maintenance platform:
@@ -94,7 +100,7 @@ The roadmap extends beyond a debloater into a Windows maintenance platform:
 - keep diagnostics, profiles and technician workflows secondary to the tweak engine
 - automated release validation
 
-See [ROADMAP.md](ROADMAP.md), [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) and [docs/INTELLIGENCE.md](docs/INTELLIGENCE.md) and [docs/DOCTOR.md](docs/DOCTOR.md) and [docs/PROFILES.md](docs/PROFILES.md), [docs/TWEAKS.md](docs/TWEAKS.md) and [docs/NO-LOCK.md](docs/NO-LOCK.md) and [docs/WINUTIL-AUDIT-v0.6.md](docs/WINUTIL-AUDIT-v0.6.md).
+See [ROADMAP.md](ROADMAP.md), [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md), [docs/INTELLIGENCE.md](docs/INTELLIGENCE.md), [docs/DOCTOR.md](docs/DOCTOR.md), [docs/PROFILES.md](docs/PROFILES.md), [docs/TWEAKS.md](docs/TWEAKS.md), [docs/NO-LOCK.md](docs/NO-LOCK.md) and [docs/WINUTIL-AUDIT-v0.6.md](docs/WINUTIL-AUDIT-v0.6.md).
 
 ## Contributing
 
