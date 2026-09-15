@@ -45,6 +45,9 @@ jobs:
       - name: Validate custom resolution safety layer
         shell: powershell
         run: .\tests\Resolution.Tests.ps1
+      - name: Validate bootstrap update lifecycle
+        shell: powershell
+        run: .\tests\Bootstrap.Tests.ps1
       - name: Compile and test storage scanner
         shell: powershell
         run: .\tests\StorageScanner.Tests.ps1
