@@ -43,4 +43,11 @@ if ($cppText -notmatch [regex]::Escape('DrawCardBackgrounds(dc, client);')) { th
 $cardLayerCall = $cppText.IndexOf('DrawCardBackgrounds(dc, client);')
 $watermarkCall = $cppText.IndexOf('DrawBrandWatermark(dc, client);')
 if ($cardLayerCall -lt 0 -or $watermarkCall -lt 0 -or $cardLayerCall -ge $watermarkCall) { throw '986 Storage watermark must render after card backgrounds so the 25% logo remains visible.' }
-Write-Host 'PASS: Storage shell CLSID, COM surface and no-self-registration contract validated.' -ForegroundColor Green
+
+if ($cppText -match [regex]::Escape('case WM_TIMER: self->RefreshCaches(); InvalidateRect(hwnd, nullptr, FALSE); return 0;')) {
+    throw 'Storage view must not repaint the full view on every idle timer tick.'
+}
+foreach ($marker in 'case WM_TIMER: {','bool repaint = false;','if (d.scanning) { repaint = true; break; }','if (repaint) InvalidateRect(hwnd, nullptr, FALSE);') {
+    if ($cppText -notmatch [regex]::Escape($marker)) { throw "Missing idle-flicker guard marker: $marker" }
+}
+Write-Host 'PASS: Storage shell CLSID, COM surface, safety and idle repaint guard validated.' -ForegroundColor Green
