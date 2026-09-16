@@ -1,0 +1,49 @@
+name: Temporary GDI+ allocation patch
+
+on:
+  push:
+    branches:
+      - fix/storage-shell-update-lifecycle
+    paths:
+      - .github/workflows/patch-gdiplus-new-temp.yml
+
+permissions:
+  contents: write
+
+jobs:
+  patch:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: fix/storage-shell-update-lifecycle
+          fetch-depth: 0
+      - name: Patch GDI+ Bitmap allocation
+        shell: python
+        run: |
+          from pathlib import Path
+          p = Path('storage/shell/StorageShell.cpp')
+          text = p.read_text(encoding='utf-8')
+          old = 'Gdiplus::Bitmap* copy = new (std::nothrow) Gdiplus::Bitmap(width, height, PixelFormat32bppPARGB);'
+          new = 'Gdiplus::Bitmap* copy = new Gdiplus::Bitmap(width, height, PixelFormat32bppPARGB);'
+          count = text.count(old)
+          if count != 1:
+              raise SystemExit(f'Expected exactly one GDI+ nothrow allocation, found {count}')
+          p.write_text(text.replace(old, new), encoding='utf-8', newline='\n')
+      - name: Verify patch
+        shell: bash
+        run: |
+          set -euo pipefail
+          git diff --check
+          grep -F 'Gdiplus::Bitmap* copy = new Gdiplus::Bitmap(width, height, PixelFormat32bppPARGB);' storage/shell/StorageShell.cpp
+          ! grep -F 'new (std::nothrow) Gdiplus::Bitmap' storage/shell/StorageShell.cpp
+      - name: Commit patch
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add storage/shell/StorageShell.cpp
+          git diff --cached --check
+          git commit -m 'fix: use GDI+ compatible Bitmap allocation'
+          git push origin HEAD:fix/storage-shell-update-lifecycle
