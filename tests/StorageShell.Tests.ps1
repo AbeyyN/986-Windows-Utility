@@ -25,6 +25,9 @@ if ($cppText -match 'PtInRect\(&d\.scanButton') { throw 'Click dispatch must not
 foreach ($marker in 'QuoteCommandLineArg','QuoteCommandLineArg(scanner)','QuoteCommandLineArg(d.root)','QuoteCommandLineArg(cache)') {
     if ($cppText -notmatch [regex]::Escape($marker)) { throw "Missing safe scanner command-line marker: $marker" }
 }
+foreach ($marker in 'ResolveScannerPath','moduleDir + L"\\..\\..\\bin\\986StorageScanner.exe"','scannerDir.c_str()') {
+    if ($cppText -notmatch [regex]::Escape($marker)) { throw "Missing side-by-side scanner resolution marker: $marker" }
+}
 if ($cppText -match [regex]::Escape('L"\\" " + d.root')) { throw 'Drive roots must not use naive quoted trailing-backslash command-line construction.' }
 foreach ($marker in '#include <gdiplus.h>','LoadBrandWatermark','DrawBrandWatermark','AbeyyTechXy-logo.png','ModuleDirectory() + L"\\AbeyyTechXy-logo.png"','Gdiplus::Bitmap* copy','delete source','0.25f','DrawBrandWatermark(dc, client)') {
     if ($cppText -notmatch [regex]::Escape($marker)) { throw "Missing 986 Storage 25% brand watermark marker: $marker" }
@@ -51,4 +54,7 @@ if ($cppText -match [regex]::Escape('case WM_TIMER: self->RefreshCaches(); Inval
 foreach ($marker in 'case WM_TIMER: {','bool repaint = false;','if (d.scanning) { repaint = true; break; }','if (repaint) InvalidateRect(hwnd, nullptr, FALSE);') {
     if ($cppText -notmatch [regex]::Escape($marker)) { throw "Missing idle-flicker guard marker: $marker" }
 }
-Write-Host 'PASS: Storage shell CLSID, COM surface, safety, watermark lock release and idle repaint guard validated.' -ForegroundColor Green
+foreach ($marker in 'RGB(88, 166, 255)','RGB(70, 210, 190)','RGB(174, 125, 255)','RoundRect','A clear view of what is using your storage') {
+    if ($cppText -notmatch [regex]::Escape($marker)) { throw "Missing modern Storage UI marker: $marker" }
+}
+Write-Host 'PASS: Storage shell CLSID, COM surface, scanner resolution, modern category UI, safety, watermark lock release and idle repaint guard validated.' -ForegroundColor Green
