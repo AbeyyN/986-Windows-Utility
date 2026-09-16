@@ -1,0 +1,262 @@
+name: Temporary Storage scanner and modern UI patch
+
+on:
+  push:
+    branches:
+      - fix/storage-shell-update-lifecycle
+    paths:
+      - .github/workflows/patch-storage-scan-modern-ui-temp.yml
+
+permissions:
+  contents: write
+
+jobs:
+  patch:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: fix/storage-shell-update-lifecycle
+          fetch-depth: 0
+      - name: Patch Storage shell and contract tests
+        shell: python
+        run: |
+          from pathlib import Path
+
+          cpp = Path('storage/shell/StorageShell.cpp')
+          text = cpp.read_text(encoding='utf-8')
+
+          def replace_once(old, new, label):
+              global text
+              count = text.count(old)
+              if count != 1:
+                  raise SystemExit(f'{label}: expected exactly one match, found {count}')
+              text = text.replace(old, new, 1)
+
+          module_old = '''static std::wstring ModuleDirectory() {
+              wchar_t path[MAX_PATH]{};
+              GetModuleFileNameW(g_instance, path, MAX_PATH);
+              wchar_t* slash = wcsrchr(path, L'\\\\');
+              if (slash) *slash = L'\\0';
+              return path;
+          }
+          '''
+          module_new = module_old + '''
+          static std::wstring ResolveScannerPath() {
+              const std::wstring moduleDir = ModuleDirectory();
+              const std::wstring candidates[] = {
+                  moduleDir + L"\\\\986StorageScanner.exe",
+                  moduleDir + L"\\\\..\\\\..\\\\bin\\\\986StorageScanner.exe"
+              };
+              for (const auto& candidate : candidates) {
+                  wchar_t full[MAX_PATH]{};
+                  DWORD chars = GetFullPathNameW(candidate.c_str(), MAX_PATH, full, nullptr);
+                  if (!chars || chars >= MAX_PATH) continue;
+                  DWORD attrs = GetFileAttributesW(full);
+                  if (attrs != INVALID_FILE_ATTRIBUTES && !(attrs & FILE_ATTRIBUTE_DIRECTORY)) return full;
+              }
+              return L"";
+          }
+          '''
+          replace_once(module_old, module_new, 'scanner resolver insertion')
+
+          palette_old = '''static COLORREF SegmentColor(size_t index) {
+              static const COLORREF colors[] = {
+                  RGB(183, 110, 121), RGB(255, 138, 0), RGB(216, 160, 168),
+                  RGB(200, 90, 0), RGB(122, 65, 75), RGB(175, 168, 163),
+                  RGB(90, 60, 64), RGB(59, 39, 41), RGB(23, 18, 19)
+              };
+              return colors[index < ARRAYSIZE(colors) ? index : ARRAYSIZE(colors) - 1];
+          }
+          '''
+          palette_new = '''static COLORREF SegmentColor(size_t index) {
+              // Category colors stay intentionally distinct; rose-gold is reserved for brand accent.
+              static const COLORREF colors[] = {
+                  RGB(88, 166, 255),   // Apps - blue
+                  RGB(255, 100, 146),  // Videos - pink
+                  RGB(70, 210, 190),   // Pictures - teal
+                  RGB(255, 196, 92),   // Documents - amber
+                  RGB(174, 125, 255),  // Audio - violet
+                  RGB(255, 112, 94),   // System - coral
+                  RGB(139, 148, 164)   // Other - slate
+              };
+              return colors[index < ARRAYSIZE(colors) ? index : ARRAYSIZE(colors) - 1];
+          }
+          '''
+          replace_once(palette_old, palette_new, 'category palette')
+
+          scan_old = '''    bool StartScan(DriveCard& d) {
+                  const std::wstring moduleDir = ModuleDirectory();
+                  const std::wstring scanner = moduleDir + L"\\\\986StorageScanner.exe";
+                  if (GetFileAttributesW(scanner.c_str()) == INVALID_FILE_ATTRIBUTES) {
+                      d.scanError = GetLastError();
+                      return false;
+                  }
+          '''
+          scan_new = '''    bool StartScan(DriveCard& d) {
+                  const std::wstring scanner = ResolveScannerPath();
+                  if (scanner.empty()) {
+                      d.scanError = ERROR_FILE_NOT_FOUND;
+                      d.progressText = L"986 Storage scanner is missing from the installed payload.";
+                      return false;
+                  }
+                  const size_t slash = scanner.find_last_of(L"\\\\/");
+                  const std::wstring scannerDir = slash == std::wstring::npos ? ModuleDirectory() : scanner.substr(0, slash);
+          '''
+          replace_once(scan_old, scan_new, 'StartScan scanner resolution')
+          replace_once('CreateProcessW(scanner.c_str(), mutableCmd.data(), nullptr, nullptr, FALSE, CREATE_NO_WINDOW, nullptr, moduleDir.c_str(), &si, &pi)',
+                       'CreateProcessW(scanner.c_str(), mutableCmd.data(), nullptr, nullptr, FALSE, CREATE_NO_WINDOW, nullptr, scannerDir.c_str(), &si, &pi)',
+                       'scanner working directory')
+
+          button_old = '''        COLORREF fill = drive->scanning ? RGB(122, 65, 75) : RGB(255, 138, 0);
+                  if ((dis->itemState & ODS_SELECTED) && !drive->scanning) fill = RGB(200, 90, 0);
+                  HBRUSH brush = CreateSolidBrush(fill);
+                  FillRect(dis->hDC, &dis->rcItem, brush);
+                  DeleteObject(brush);
+                  SetBkMode(dis->hDC, TRANSPARENT);
+          '''
+          button_new = '''        COLORREF fill = drive->scanning ? RGB(255, 112, 94) : RGB(88, 166, 255);
+                  if ((dis->itemState & ODS_SELECTED) && !drive->scanning) fill = RGB(68, 142, 232);
+                  HBRUSH brush = CreateSolidBrush(fill);
+                  HPEN pen = CreatePen(PS_SOLID, 1, fill);
+                  HGDIOBJ oldBrush = SelectObject(dis->hDC, brush);
+                  HGDIOBJ oldPen = SelectObject(dis->hDC, pen);
+                  RoundRect(dis->hDC, dis->rcItem.left, dis->rcItem.top, dis->rcItem.right, dis->rcItem.bottom, 14, 14);
+                  SelectObject(dis->hDC, oldBrush);
+                  SelectObject(dis->hDC, oldPen);
+                  DeleteObject(brush);
+                  DeleteObject(pen);
+                  SetBkMode(dis->hDC, TRANSPARENT);
+          '''
+          replace_once(button_old, button_new, 'modern scan button')
+
+          action_old = '''    static void DrawActionChip(HDC dc, const RECT& rect, const wchar_t* text, bool enabled, bool accent) {
+                  COLORREF fill = enabled ? (accent ? RGB(200, 90, 0) : RGB(90, 60, 64)) : RGB(35, 30, 31);
+                  HBRUSH brush = CreateSolidBrush(fill); FillRect(dc, &rect, brush); DeleteObject(brush);
+                  SetBkMode(dc, TRANSPARENT); SetTextColor(dc, enabled ? RGB(245, 241, 238) : RGB(110, 105, 102));
+                  RECT r = rect; DrawTextW(dc, text, -1, &r, DT_CENTER | DT_VCENTER | DT_SINGLELINE | DT_END_ELLIPSIS);
+              }
+          '''
+          action_new = '''    static void DrawActionChip(HDC dc, const RECT& rect, const wchar_t* text, bool enabled, bool accent) {
+                  COLORREF fill = enabled ? (accent ? RGB(183, 110, 121) : RGB(45, 47, 53)) : RGB(31, 32, 36);
+                  COLORREF border = enabled ? (accent ? RGB(216, 160, 168) : RGB(66, 68, 75)) : RGB(43, 44, 49);
+                  HBRUSH brush = CreateSolidBrush(fill);
+                  HPEN pen = CreatePen(PS_SOLID, 1, border);
+                  HGDIOBJ oldBrush = SelectObject(dc, brush);
+                  HGDIOBJ oldPen = SelectObject(dc, pen);
+                  RoundRect(dc, rect.left, rect.top, rect.right, rect.bottom, 12, 12);
+                  SelectObject(dc, oldBrush); SelectObject(dc, oldPen);
+                  DeleteObject(brush); DeleteObject(pen);
+                  SetBkMode(dc, TRANSPARENT); SetTextColor(dc, enabled ? RGB(242, 243, 246) : RGB(105, 108, 116));
+                  RECT r = rect; DrawTextW(dc, text, -1, &r, DT_CENTER | DT_VCENTER | DT_SINGLELINE | DT_END_ELLIPSIS);
+              }
+          '''
+          replace_once(action_old, action_new, 'modern action chips')
+
+          cards_old = '''    void DrawCardBackgrounds(HDC dc, const RECT& client) {
+                  int top = 88;
+                  for (auto& d : drives_) {
+                      CardLayout layout = BuildCardLayout(client, top, d.cacheLoaded);
+                      HBRUSH cardBrush = CreateSolidBrush(RGB(18, 14, 15));
+                      FillRect(dc, &layout.card, cardBrush);
+                      DeleteObject(cardBrush);
+                      top += layout.cardHeight + 18;
+                  }
+              }
+          '''
+          cards_new = '''    void DrawCardBackgrounds(HDC dc, const RECT& client) {
+                  int top = 88;
+                  for (auto& d : drives_) {
+                      CardLayout layout = BuildCardLayout(client, top, d.cacheLoaded);
+                      HBRUSH cardBrush = CreateSolidBrush(RGB(27, 28, 32));
+                      HPEN cardPen = CreatePen(PS_SOLID, 1, RGB(52, 54, 61));
+                      HGDIOBJ oldBrush = SelectObject(dc, cardBrush);
+                      HGDIOBJ oldPen = SelectObject(dc, cardPen);
+                      RoundRect(dc, layout.card.left, layout.card.top, layout.card.right, layout.card.bottom, 24, 24);
+                      SelectObject(dc, oldBrush); SelectObject(dc, oldPen);
+                      DeleteObject(cardBrush); DeleteObject(cardPen);
+                      top += layout.cardHeight + 18;
+                  }
+              }
+          '''
+          replace_once(cards_old, cards_new, 'rounded cards')
+
+          replace_once('HBRUSH bg = CreateSolidBrush(RGB(0, 0, 0)); FillRect(dc, &client, bg); DeleteObject(bg);',
+                       'HBRUSH bg = CreateSolidBrush(RGB(14, 15, 18)); FillRect(dc, &client, bg); DeleteObject(bg);',
+                       'modern background')
+          replace_once('HFONT titleFont = CreateFontW(24, 0, 0, 0, FW_SEMIBOLD, FALSE, FALSE, FALSE, DEFAULT_CHARSET, 0, 0, CLEARTYPE_QUALITY, 0, L"Segoe UI");',
+                       'HFONT titleFont = CreateFontW(28, 0, 0, 0, FW_SEMIBOLD, FALSE, FALSE, FALSE, DEFAULT_CHARSET, 0, 0, CLEARTYPE_QUALITY, 0, L"Segoe UI");',
+                       'title typography')
+          replace_once('const wchar_t* subtitle = L"Android-style storage breakdown inside File Explorer";\n        TextOutW(dc, 28, 52, subtitle, static_cast<int>(wcslen(subtitle)));',
+                       'SetTextColor(dc, RGB(151, 154, 163));\n        const wchar_t* subtitle = L"A clear view of what is using your storage";\n        TextOutW(dc, 28, 54, subtitle, static_cast<int>(wcslen(subtitle)));',
+                       'modern subtitle')
+          replace_once('HBRUSH usedBase = CreateSolidBrush(RGB(59, 39, 41)); FillRect(dc, &bar, usedBase); DeleteObject(usedBase);',
+                       'HBRUSH usedBase = CreateSolidBrush(RGB(42, 44, 50)); FillRect(dc, &bar, usedBase); DeleteObject(usedBase);',
+                       'storage bar base')
+          replace_once('HBRUSH rb = CreateSolidBrush(RGB(59, 39, 41)); FillRect(dc, &seg, rb); DeleteObject(rb);',
+                       'HBRUSH rb = CreateSolidBrush(RGB(65, 68, 76)); FillRect(dc, &seg, rb); DeleteObject(rb);',
+                       'storage residual')
+          replace_once('HBRUSH fb = CreateSolidBrush(RGB(0, 0, 0)); FillRect(dc, &seg, fb); DeleteObject(fb);',
+                       'HBRUSH fb = CreateSolidBrush(RGB(42, 44, 50)); FillRect(dc, &seg, fb); DeleteObject(fb);',
+                       'storage free segment')
+
+          labels_old = '''                for (int i = 0; i < 7; ++i) {
+                              const int row = i / labelColumns;
+                              const int col = i % labelColumns;
+                              const int labelX = left + 18 + col * columnWidth;
+                              std::wstring value = FormatGb(values[i]);
+                              wchar_t line[96]{}; swprintf_s(line, L"%s %s", names[i], value.c_str());
+                              TextOutW(dc, labelX, labelY + row * 25, line, static_cast<int>(wcslen(line)));
+                          }
+          '''
+          labels_new = '''                for (int i = 0; i < 7; ++i) {
+                              const int row = i / labelColumns;
+                              const int col = i % labelColumns;
+                              const int labelX = left + 18 + col * columnWidth;
+                              const int y = labelY + row * 25;
+                              RECT dot{ labelX, y + 5, labelX + 9, y + 14 };
+                              HBRUSH dotBrush = CreateSolidBrush(SegmentColor(static_cast<size_t>(i)));
+                              FillRect(dc, &dot, dotBrush); DeleteObject(dotBrush);
+                              std::wstring value = FormatGb(values[i]);
+                              wchar_t line[96]{}; swprintf_s(line, L"%s  %s", names[i], value.c_str());
+                              SetTextColor(dc, RGB(188, 191, 199));
+                              TextOutW(dc, labelX + 15, y, line, static_cast<int>(wcslen(line)));
+                          }
+          '''
+          replace_once(labels_old, labels_new, 'category legend')
+
+          cpp.write_text(text, encoding='utf-8', newline='\n')
+
+          tests = Path('tests/StorageShell.Tests.ps1')
+          test_text = tests.read_text(encoding='utf-8')
+          anchor = "foreach ($marker in 'QuoteCommandLineArg','QuoteCommandLineArg(scanner)','QuoteCommandLineArg(d.root)','QuoteCommandLineArg(cache)') {\n    if ($cppText -notmatch [regex]::Escape($marker)) { throw \"Missing safe scanner command-line marker: $marker\" }\n}\n"
+          insert = anchor + "foreach ($marker in 'ResolveScannerPath','moduleDir + L\"\\\\..\\\\..\\\\bin\\\\986StorageScanner.exe\"','scannerDir.c_str()') {\n    if ($cppText -notmatch [regex]::Escape($marker)) { throw \"Missing side-by-side scanner resolution marker: $marker\" }\n}\n"
+          if test_text.count(anchor) != 1:
+              raise SystemExit('StorageShell.Tests scanner anchor drifted')
+          test_text = test_text.replace(anchor, insert, 1)
+          final = "Write-Host 'PASS: Storage shell CLSID, COM surface, safety, watermark lock release and idle repaint guard validated.' -ForegroundColor Green\n"
+          modern = "foreach ($marker in 'RGB(88, 166, 255)','RGB(70, 210, 190)','RGB(174, 125, 255)','RoundRect','A clear view of what is using your storage') {\n    if ($cppText -notmatch [regex]::Escape($marker)) { throw \"Missing modern Storage UI marker: $marker\" }\n}\nWrite-Host 'PASS: Storage shell CLSID, COM surface, scanner resolution, modern category UI, safety, watermark lock release and idle repaint guard validated.' -ForegroundColor Green\n"
+          if test_text.count(final) != 1:
+              raise SystemExit('StorageShell.Tests final status anchor drifted')
+          test_text = test_text.replace(final, modern, 1)
+          tests.write_text(test_text, encoding='utf-8', newline='\n')
+      - name: Verify patch
+        shell: bash
+        run: |
+          set -euo pipefail
+          git diff --check
+          grep -F 'ResolveScannerPath' storage/shell/StorageShell.cpp
+          grep -F 'moduleDir + L"\\..\\..\\bin\\986StorageScanner.exe"' storage/shell/StorageShell.cpp
+          grep -F 'RGB(88, 166, 255)' storage/shell/StorageShell.cpp
+          grep -F 'RoundRect' storage/shell/StorageShell.cpp
+          grep -F 'A clear view of what is using your storage' storage/shell/StorageShell.cpp
+      - name: Commit patch
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add storage/shell/StorageShell.cpp tests/StorageShell.Tests.ps1
+          git diff --cached --check
+          git commit -m 'fix: resolve versioned scanner and modernize Storage UI'
+          git push origin HEAD:fix/storage-shell-update-lifecycle
