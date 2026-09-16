@@ -78,8 +78,12 @@ function Install-986StoragePayload {
     $storageRoot = Join-Path $Root 'storage'
     $sourceBin = Join-Path $SourceStorage 'bin'
     $sourceShell = Join-Path $sourceBin '986StorageShell.dll'
+    $sourceScanner = Join-Path $sourceBin '986StorageScanner.exe'
     if (-not (Test-Path -LiteralPath $sourceShell -PathType Leaf)) {
         throw 'Release package is missing storage\bin\986StorageShell.dll.'
+    }
+    if (-not (Test-Path -LiteralPath $sourceScanner -PathType Leaf)) {
+        throw 'Release package is missing storage\bin\986StorageScanner.exe.'
     }
     if (-not (Test-Path -LiteralPath $SourceLogo -PathType Leaf)) {
         throw 'Release package is missing assets\AbeyyTechXy-logo.png.'
@@ -92,7 +96,7 @@ function Install-986StoragePayload {
             $binRoot = Join-Path $storageRoot 'bin'
             New-Item -ItemType Directory -Force -Path $binRoot | Out-Null
             foreach ($binItem in @(Get-ChildItem -LiteralPath $child.FullName -Force)) {
-                if ($binItem.Name -eq '986StorageShell.dll') { continue }
+                if ($binItem.Name -in @('986StorageShell.dll','986StorageScanner.exe')) { continue }
                 $target = Join-Path $binRoot $binItem.Name
                 if ($RepairMode) {
                     Copy-986MergeItem -Source $binItem.FullName -Destination $target
@@ -116,6 +120,7 @@ function Install-986StoragePayload {
     $safeTag = ($ReleaseTag -replace '[^A-Za-z0-9._-]', '_')
     $versionedShellDir = Join-Path $storageRoot ("versions\" + $safeTag)
     $versionedShell = Join-Path $versionedShellDir '986StorageShell.dll'
+    $versionedScanner = Join-Path $versionedShellDir '986StorageScanner.exe'
     $versionedLogo = Join-Path $versionedShellDir 'AbeyyTechXy-logo.png'
     New-Item -ItemType Directory -Force -Path $versionedShellDir | Out-Null
 
@@ -139,6 +144,16 @@ function Install-986StoragePayload {
         Copy-Item -LiteralPath $sourceShell -Destination $versionedShell -Force
     }
 
+    if (Test-Path -LiteralPath $versionedScanner -PathType Leaf) {
+        $sourceScannerHash = (Get-FileHash -LiteralPath $sourceScanner -Algorithm SHA256).Hash
+        $targetScannerHash = (Get-FileHash -LiteralPath $versionedScanner -Algorithm SHA256).Hash
+        if ($sourceScannerHash -ne $targetScannerHash) {
+            throw "Existing versioned Storage scanner does not match $ReleaseTag. Refusing to mutate an immutable native payload."
+        }
+    } else {
+        Copy-Item -LiteralPath $sourceScanner -Destination $versionedScanner -Force
+    }
+
     # Legacy fallback is created only once. Never replace it in-place because Explorer
     # may have this DLL loaded from releases prior to side-by-side shell deployment.
     $legacyShell = Join-Path $storageRoot 'bin\986StorageShell.dll'
@@ -147,22 +162,12 @@ function Install-986StoragePayload {
         Copy-Item -LiteralPath $sourceShell -Destination $legacyShell -Force
     }
 
-    # Migrate an existing 986-owned registration to the immutable versioned path.
-    # Explorer may continue using the already-loaded old DLL until it naturally restarts;
-    # the bootstrap deliberately does not force-restart Explorer.
-    $classRoot = 'HKCU:\Software\Classes\CLSID\{5FCCE720-D806-4B6A-A5F1-F060344FC88D}'
-    if (Test-Path $classRoot) {
-        $owned = $false
-        try {
-            $owned = ((Get-ItemProperty -Path $classRoot -Name '986Owner' -ErrorAction Stop).'986Owner' -eq 'AbeyyTechXy/986-Windows-Utility')
-        } catch { }
-        if ($owned) {
-            $inproc = Join-Path $classRoot 'InprocServer32'
-            if (Test-Path $inproc) {
-                Set-Item -Path $inproc -Value ([IO.Path]::GetFullPath($versionedShell))
-                Write-Host '986 Storage shell registration migrated to the versioned payload. Explorer restart is not forced.' -ForegroundColor DarkGray
-            }
-        }
+    # Legacy scanner is created only once. Never replace a possibly running executable
+    # in-place; the new versioned shell launches its version-local scanner.
+    $legacyScanner = Join-Path $storageRoot 'bin\986StorageScanner.exe'
+    if (-not (Test-Path -LiteralPath $legacyScanner -PathType Leaf)) {
+        New-Item -ItemType Directory -Force -Path (Split-Path -Parent $legacyScanner) | Out-Null
+        Copy-Item -LiteralPath $sourceScanner -Destination $legacyScanner -Force
     }
 
     return $versionedShell
@@ -248,12 +253,13 @@ try {
     New-Item -ItemType Directory -Force -Path $InstallDir | Out-Null
     $stateDir = Join-Path $InstallDir 'state'
     New-Item -ItemType Directory -Force -Path $stateDir | Out-Null
+    $pendingStorageShell = $null
 
     foreach ($item in @(Get-ChildItem -Path $packageRoot.FullName -Force)) {
         if ($item.Name -eq 'state') { continue }
 
         if ($item.Name -eq 'storage' -and $item.PSIsContainer) {
-            [void](Install-986StoragePayload -SourceStorage $item.FullName -SourceLogo (Join-Path $packageRoot.FullName 'assets\AbeyyTechXy-logo.png') -Root $InstallDir -ReleaseTag ([string]$release.tag_name) -RepairMode $repairMode)
+            $pendingStorageShell = Install-986StoragePayload -SourceStorage $item.FullName -SourceLogo (Join-Path $packageRoot.FullName 'assets\AbeyyTechXy-logo.png') -Root $InstallDir -ReleaseTag ([string]$release.tag_name) -RepairMode $repairMode
             continue
         }
 
@@ -265,6 +271,25 @@ try {
                 Remove-Item -LiteralPath $destination -Recurse -Force
             }
             Copy-Item -LiteralPath $item.FullName -Destination $destination -Recurse -Force
+        }
+    }
+
+    # Switch Explorer registration only after every package copy succeeded. This avoids
+    # exposing a new native shell path when a later top-level update step fails.
+    if (-not [string]::IsNullOrWhiteSpace([string]$pendingStorageShell)) {
+        $classRoot = 'HKCU:\Software\Classes\CLSID\{5FCCE720-D806-4B6A-A5F1-F060344FC88D}'
+        if (Test-Path $classRoot) {
+            $owned = $false
+            try {
+                $owned = ((Get-ItemProperty -Path $classRoot -Name '986Owner' -ErrorAction Stop).'986Owner' -eq 'AbeyyTechXy/986-Windows-Utility')
+            } catch { }
+            if ($owned) {
+                $inproc = Join-Path $classRoot 'InprocServer32'
+                if (Test-Path $inproc) {
+                    Set-Item -Path $inproc -Value ([IO.Path]::GetFullPath($pendingStorageShell))
+                    Write-Host '986 Storage registration switched after the update transaction completed. Explorer restart is not forced.' -ForegroundColor DarkGray
+                }
+            }
         }
     }
 

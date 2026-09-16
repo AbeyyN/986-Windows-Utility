@@ -20,7 +20,7 @@ foreach ($entry in @(
     catch { throw "$($entry.Name) PowerShell syntax is invalid: $($_.Exception.Message)" }
 }
 
-foreach ($marker in 'Get-986InstalledVersion','Copy-986MergeItem','Install-986StoragePayload','versionedShellDir','versionedLogo','SourceLogo','AbeyyTechXy-logo.png','repairMode','Refusing to overwrite a possibly loaded DLL','Explorer restart is not forced') {
+foreach ($marker in 'Get-986InstalledVersion','Copy-986MergeItem','Install-986StoragePayload','versionedShellDir','versionedScanner','versionedLogo','SourceLogo','986StorageScanner.exe','AbeyyTechXy-logo.png','repairMode','Refusing to overwrite a possibly loaded DLL','Refusing to mutate an immutable native payload','pendingStorageShell','update transaction completed','Explorer restart is not forced') {
     if ($bootstrapText -notmatch [regex]::Escape($marker)) { throw "Missing bootstrap update-safety marker: $marker" }
 }
 if ($bootstrapText -notmatch [regex]::Escape('Get-FileHash -LiteralPath $Destination -Algorithm SHA256')) {
@@ -31,6 +31,14 @@ if ($bootstrapText -notmatch [regex]::Escape("$item.Name -eq 'assets'")) {
 }
 if ($bootstrapText -notmatch [regex]::Escape('$installedVersion -eq $releaseVersion')) {
     throw 'Bootstrap same-version repair guard is missing.'
+}
+if ($bootstrapText -notmatch [regex]::Escape("$binItem.Name -in @('986StorageShell.dll','986StorageScanner.exe')")) {
+    throw 'Bootstrap must not replace either native Storage binary in legacy bin during update.'
+}
+$copyLoop = $bootstrapText.IndexOf('foreach ($item in @(Get-ChildItem -Path $packageRoot.FullName -Force))')
+$registrySwitch = $bootstrapText.IndexOf('Switch Explorer registration only after every package copy succeeded')
+if ($copyLoop -lt 0 -or $registrySwitch -lt 0 -or $registrySwitch -le $copyLoop) {
+    throw 'Storage registration must switch only after the package copy transaction completes.'
 }
 if ($bootstrapText -match '(?i)Stop-Process[^\r\n]*explorer|taskkill[^\r\n]*explorer|Stop-Process[^\r\n]*-Name\s+explorer') {
     throw 'Bootstrap must never force-restart Explorer to replace a loaded Storage shell DLL.'
@@ -50,4 +58,4 @@ foreach ($marker in 'Start-986VerifiedUpdate','-NoLaunch -InstallDir','side-by-s
     if ($updateText -notmatch [regex]::Escape($marker)) { throw "Missing Update Center side-by-side marker: $marker" }
 }
 
-Write-Host 'PASS: bootstrap and Update Center use non-destructive, version-aware Storage shell update lifecycle.' -ForegroundColor Green
+Write-Host 'PASS: bootstrap and Update Center use transactional, non-destructive, version-aware Storage native payload lifecycle.' -ForegroundColor Green
