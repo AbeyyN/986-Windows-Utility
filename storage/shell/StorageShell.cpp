@@ -398,7 +398,7 @@ private:
         if (!source || source->GetLastStatus() != Gdiplus::Ok) { delete source; continue; }
         const UINT width = source->GetWidth(), height = source->GetHeight();
         if (!width || !height) { delete source; continue; }
-        Gdiplus::Bitmap* copy = new (std::nothrow) Gdiplus::Bitmap(width, height, PixelFormat32bppPARGB);
+        Gdiplus::Bitmap* copy = new Gdiplus::Bitmap(width, height, PixelFormat32bppPARGB);
         if (!copy || copy->GetLastStatus() != Gdiplus::Ok) { delete copy; delete source; continue; }
         Gdiplus::Graphics graphics(copy);
         if (graphics.DrawImage(source, 0, 0, width, height) == Gdiplus::Ok) watermark_ = copy;
