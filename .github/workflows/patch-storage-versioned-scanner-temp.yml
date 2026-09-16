@@ -33,116 +33,83 @@ jobs:
                   raise SystemExit(f'{label}: expected exactly one match, found {count}')
               text = text.replace(old, new, 1)
 
-          repl("    $sourceShell = Join-Path $sourceBin '986StorageShell.dll'\n    if (-not (Test-Path -LiteralPath $sourceShell -PathType Leaf)) {\n        throw 'Release package is missing storage\\bin\\986StorageShell.dll.'\n    }\n",
-               "    $sourceShell = Join-Path $sourceBin '986StorageShell.dll'\n    $sourceScanner = Join-Path $sourceBin '986StorageScanner.exe'\n    if (-not (Test-Path -LiteralPath $sourceShell -PathType Leaf)) {\n        throw 'Release package is missing storage\\bin\\986StorageShell.dll.'\n    }\n    if (-not (Test-Path -LiteralPath $sourceScanner -PathType Leaf)) {\n        throw 'Release package is missing storage\\bin\\986StorageScanner.exe.'\n    }\n",
+          repl("    $sourceShell = Join-Path $sourceBin '986StorageShell.dll'\n",
+               "    $sourceShell = Join-Path $sourceBin '986StorageShell.dll'\n    $sourceScanner = Join-Path $sourceBin '986StorageScanner.exe'\n",
+               'source scanner path')
+          repl("    if (-not (Test-Path -LiteralPath $SourceLogo -PathType Leaf)) {\n",
+               "    if (-not (Test-Path -LiteralPath $sourceScanner -PathType Leaf)) {\n        throw 'Release package is missing storage\\bin\\986StorageScanner.exe.'\n    }\n    if (-not (Test-Path -LiteralPath $SourceLogo -PathType Leaf)) {\n",
                'source scanner validation')
-
           repl("                if ($binItem.Name -eq '986StorageShell.dll') { continue }\n",
                "                if ($binItem.Name -in @('986StorageShell.dll','986StorageScanner.exe')) { continue }\n",
                'skip mutable native bin payloads')
-
-          repl("    $versionedShell = Join-Path $versionedShellDir '986StorageShell.dll'\n    $versionedLogo = Join-Path $versionedShellDir 'AbeyyTechXy-logo.png'\n",
-               "    $versionedShell = Join-Path $versionedShellDir '986StorageShell.dll'\n    $versionedScanner = Join-Path $versionedShellDir '986StorageScanner.exe'\n    $versionedLogo = Join-Path $versionedShellDir 'AbeyyTechXy-logo.png'\n",
+          repl("    $versionedShell = Join-Path $versionedShellDir '986StorageShell.dll'\n",
+               "    $versionedShell = Join-Path $versionedShellDir '986StorageShell.dll'\n    $versionedScanner = Join-Path $versionedShellDir '986StorageScanner.exe'\n",
                'versioned scanner path')
 
-          shell_block = '''    if (Test-Path -LiteralPath $versionedShell -PathType Leaf) {
-              $sourceHash = (Get-FileHash -LiteralPath $sourceShell -Algorithm SHA256).Hash
-              $targetHash = (Get-FileHash -LiteralPath $versionedShell -Algorithm SHA256).Hash
-              if ($sourceHash -ne $targetHash) {
-                  throw "Existing versioned Storage shell does not match $ReleaseTag. Refusing to overwrite a possibly loaded DLL."
-              }
-          } else {
-              Copy-Item -LiteralPath $sourceShell -Destination $versionedShell -Force
-          }
-          '''
-          scanner_block = shell_block + '''
-          if (Test-Path -LiteralPath $versionedScanner -PathType Leaf) {
-              $sourceScannerHash = (Get-FileHash -LiteralPath $sourceScanner -Algorithm SHA256).Hash
-              $targetScannerHash = (Get-FileHash -LiteralPath $versionedScanner -Algorithm SHA256).Hash
-              if ($sourceScannerHash -ne $targetScannerHash) {
-                  throw "Existing versioned Storage scanner does not match $ReleaseTag. Refusing to mutate an immutable native payload."
-              }
-          } else {
-              Copy-Item -LiteralPath $sourceScanner -Destination $versionedScanner -Force
-          }
-          '''
-          repl(shell_block, scanner_block, 'immutable versioned scanner')
-
-          legacy_shell = '''    $legacyShell = Join-Path $storageRoot 'bin\\986StorageShell.dll'
-          if (-not (Test-Path -LiteralPath $legacyShell -PathType Leaf)) {
-              New-Item -ItemType Directory -Force -Path (Split-Path -Parent $legacyShell) | Out-Null
-              Copy-Item -LiteralPath $sourceShell -Destination $legacyShell -Force
-          }
-          '''
-          legacy_both = legacy_shell + '''
-          # Legacy scanner is also created only once. An already-running scanner executable
-          # must never be replaced in-place during update; the new shell uses its version-local scanner.
-          $legacyScanner = Join-Path $storageRoot 'bin\\986StorageScanner.exe'
-          if (-not (Test-Path -LiteralPath $legacyScanner -PathType Leaf)) {
-              New-Item -ItemType Directory -Force -Path (Split-Path -Parent $legacyScanner) | Out-Null
-              Copy-Item -LiteralPath $sourceScanner -Destination $legacyScanner -Force
-          }
-          '''
-          repl(legacy_shell, legacy_both, 'legacy scanner compatibility')
-
-          registration_block = '''    # Migrate an existing 986-owned registration to the immutable versioned path.
-          # Explorer may continue using the already-loaded old DLL until it naturally restarts;
-          # the bootstrap deliberately does not force-restart Explorer.
-          $classRoot = 'HKCU:\\Software\\Classes\\CLSID\\{5FCCE720-D806-4B6A-A5F1-F060344FC88D}'
-          if (Test-Path $classRoot) {
-              $owned = $false
-              try {
-                  $owned = ((Get-ItemProperty -Path $classRoot -Name '986Owner' -ErrorAction Stop).'986Owner' -eq 'AbeyyTechXy/986-Windows-Utility')
-              } catch { }
-              if ($owned) {
-                  $inproc = Join-Path $classRoot 'InprocServer32'
-                  if (Test-Path $inproc) {
-                      Set-Item -Path $inproc -Value ([IO.Path]::GetFullPath($versionedShell))
-                      Write-Host '986 Storage shell registration migrated to the versioned payload. Explorer restart is not forced.' -ForegroundColor DarkGray
+          scanner_block = '''
+              if (Test-Path -LiteralPath $versionedScanner -PathType Leaf) {
+                  $sourceScannerHash = (Get-FileHash -LiteralPath $sourceScanner -Algorithm SHA256).Hash
+                  $targetScannerHash = (Get-FileHash -LiteralPath $versionedScanner -Algorithm SHA256).Hash
+                  if ($sourceScannerHash -ne $targetScannerHash) {
+                      throw "Existing versioned Storage scanner does not match $ReleaseTag. Refusing to mutate an immutable native payload."
                   }
+              } else {
+                  Copy-Item -LiteralPath $sourceScanner -Destination $versionedScanner -Force
               }
-          }
-
-          return $versionedShell
           '''
-          repl(registration_block, "    return $versionedShell\n", 'defer registration migration')
+          marker = "\n    # Legacy fallback is created only once. Never replace it in-place because Explorer\n"
+          repl(marker, scanner_block + marker, 'insert immutable versioned scanner')
 
-          repl("    New-Item -ItemType Directory -Force -Path $InstallDir | Out-Null\n    $stateDir = Join-Path $InstallDir 'state'\n    New-Item -ItemType Directory -Force -Path $stateDir | Out-Null\n\n    foreach ($item in @(Get-ChildItem -Path $packageRoot.FullName -Force)) {\n",
-               "    New-Item -ItemType Directory -Force -Path $InstallDir | Out-Null\n    $stateDir = Join-Path $InstallDir 'state'\n    New-Item -ItemType Directory -Force -Path $stateDir | Out-Null\n    $pendingStorageShell = $null\n\n    foreach ($item in @(Get-ChildItem -Path $packageRoot.FullName -Force)) {\n",
+          legacy_scanner = '''
+              # Legacy scanner is created only once. Never replace a possibly running executable
+              # in-place; the new versioned shell launches its version-local scanner.
+              $legacyScanner = Join-Path $storageRoot 'bin\\986StorageScanner.exe'
+              if (-not (Test-Path -LiteralPath $legacyScanner -PathType Leaf)) {
+                  New-Item -ItemType Directory -Force -Path (Split-Path -Parent $legacyScanner) | Out-Null
+                  Copy-Item -LiteralPath $sourceScanner -Destination $legacyScanner -Force
+              }
+          '''
+          marker2 = "\n    # Migrate an existing 986-owned registration to the immutable versioned path.\n"
+          repl(marker2, legacy_scanner + marker2, 'insert legacy scanner fallback')
+
+          start_marker = "    # Migrate an existing 986-owned registration to the immutable versioned path.\n"
+          end_marker = "    return $versionedShell\n"
+          start = text.find(start_marker)
+          end = text.find(end_marker, start)
+          if start < 0 or end < 0:
+              raise SystemExit('defer registration block: markers not found')
+          text = text[:start] + end_marker + text[end + len(end_marker):]
+
+          repl("    $stateDir = Join-Path $InstallDir 'state'\n    New-Item -ItemType Directory -Force -Path $stateDir | Out-Null\n\n",
+               "    $stateDir = Join-Path $InstallDir 'state'\n    New-Item -ItemType Directory -Force -Path $stateDir | Out-Null\n    $pendingStorageShell = $null\n\n",
                'pending storage shell state')
-
           repl("            [void](Install-986StoragePayload -SourceStorage $item.FullName -SourceLogo (Join-Path $packageRoot.FullName 'assets\\AbeyyTechXy-logo.png') -Root $InstallDir -ReleaseTag ([string]$release.tag_name) -RepairMode $repairMode)\n",
                "            $pendingStorageShell = Install-986StoragePayload -SourceStorage $item.FullName -SourceLogo (Join-Path $packageRoot.FullName 'assets\\AbeyyTechXy-logo.png') -Root $InstallDir -ReleaseTag ([string]$release.tag_name) -RepairMode $repairMode\n",
-               'capture versioned shell for deferred switch')
+               'capture versioned shell')
 
-          final_copy = '''    }
-
-          $app = Join-Path $InstallDir '986-Windows-Utility.ps1'
-          '''
-          deferred = '''    }
-
-          # Switch Explorer registration only after every package copy succeeded. This avoids
-          # exposing a new native shell path when a later top-level update step fails.
-          if (-not [string]::IsNullOrWhiteSpace([string]$pendingStorageShell)) {
-              $classRoot = 'HKCU:\\Software\\Classes\\CLSID\\{5FCCE720-D806-4B6A-A5F1-F060344FC88D}'
-              if (Test-Path $classRoot) {
-                  $owned = $false
-                  try {
-                      $owned = ((Get-ItemProperty -Path $classRoot -Name '986Owner' -ErrorAction Stop).'986Owner' -eq 'AbeyyTechXy/986-Windows-Utility')
-                  } catch { }
-                  if ($owned) {
-                      $inproc = Join-Path $classRoot 'InprocServer32'
-                      if (Test-Path $inproc) {
-                          Set-Item -Path $inproc -Value ([IO.Path]::GetFullPath($pendingStorageShell))
-                          Write-Host '986 Storage registration switched after the update transaction completed. Explorer restart is not forced.' -ForegroundColor DarkGray
+          deferred = '''    # Switch Explorer registration only after every package copy succeeded. This avoids
+              # exposing a new native shell path when a later top-level update step fails.
+              if (-not [string]::IsNullOrWhiteSpace([string]$pendingStorageShell)) {
+                  $classRoot = 'HKCU:\\Software\\Classes\\CLSID\\{5FCCE720-D806-4B6A-A5F1-F060344FC88D}'
+                  if (Test-Path $classRoot) {
+                      $owned = $false
+                      try {
+                          $owned = ((Get-ItemProperty -Path $classRoot -Name '986Owner' -ErrorAction Stop).'986Owner' -eq 'AbeyyTechXy/986-Windows-Utility')
+                      } catch { }
+                      if ($owned) {
+                          $inproc = Join-Path $classRoot 'InprocServer32'
+                          if (Test-Path $inproc) {
+                              Set-Item -Path $inproc -Value ([IO.Path]::GetFullPath($pendingStorageShell))
+                              Write-Host '986 Storage registration switched after the update transaction completed. Explorer restart is not forced.' -ForegroundColor DarkGray
+                          }
                       }
                   }
               }
-          }
 
-          $app = Join-Path $InstallDir '986-Windows-Utility.ps1'
           '''
-          repl(final_copy, deferred, 'deferred registration switch')
+          repl("    $app = Join-Path $InstallDir '986-Windows-Utility.ps1'\n",
+               deferred + "    $app = Join-Path $InstallDir '986-Windows-Utility.ps1'\n",
+               'deferred registration switch')
 
           p.write_text(text, encoding='utf-8', newline='\n')
 
@@ -155,7 +122,7 @@ jobs:
           tt = tt.replace(old, new, 1)
 
           anchor = "if ($bootstrapText -notmatch [regex]::Escape('$installedVersion -eq $releaseVersion')) {\n    throw 'Bootstrap same-version repair guard is missing.'\n}\n"
-          extra = anchor + "if ($bootstrapText -notmatch [regex]::Escape(\"$binItem.Name -in @('986StorageShell.dll','986StorageScanner.exe')\")) {\n    throw 'Bootstrap must not replace either native Storage binary in legacy bin during update.'\n}\n$copyLoop = $bootstrapText.IndexOf('foreach ($item in @(Get-ChildItem -Path $packageRoot.FullName -Force))')\n$registrySwitch = $bootstrapText.IndexOf(\"$classRoot = 'HKCU:\\\\Software\\\\Classes\\\\CLSID\\\\{5FCCE720-D806-4B6A-A5F1-F060344FC88D}'\")\nif ($copyLoop -lt 0 -or $registrySwitch -lt 0 -or $registrySwitch -le $copyLoop) {\n    throw 'Storage registration must switch only after package copy transaction begins and completes.'\n}\n"
+          extra = anchor + "if ($bootstrapText -notmatch [regex]::Escape(\"$binItem.Name -in @('986StorageShell.dll','986StorageScanner.exe')\")) {\n    throw 'Bootstrap must not replace either native Storage binary in legacy bin during update.'\n}\n$copyLoop = $bootstrapText.IndexOf('foreach ($item in @(Get-ChildItem -Path $packageRoot.FullName -Force))')\n$registrySwitch = $bootstrapText.IndexOf('Switch Explorer registration only after every package copy succeeded')\nif ($copyLoop -lt 0 -or $registrySwitch -lt 0 -or $registrySwitch -le $copyLoop) {\n    throw 'Storage registration must switch only after the package copy transaction completes.'\n}\n"
           if tt.count(anchor) != 1:
               raise SystemExit('bootstrap repair anchor drifted')
           tt = tt.replace(anchor, extra, 1)
