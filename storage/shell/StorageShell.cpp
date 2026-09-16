@@ -108,6 +108,22 @@ static std::wstring ModuleDirectory() {
     return path;
 }
 
+static std::wstring ResolveScannerPath() {
+    const std::wstring moduleDir = ModuleDirectory();
+    const std::wstring candidates[] = {
+        moduleDir + L"\\986StorageScanner.exe",
+        moduleDir + L"\\..\\..\\bin\\986StorageScanner.exe"
+    };
+    for (const auto& candidate : candidates) {
+        wchar_t full[MAX_PATH]{};
+        DWORD chars = GetFullPathNameW(candidate.c_str(), MAX_PATH, full, nullptr);
+        if (!chars || chars >= MAX_PATH) continue;
+        DWORD attrs = GetFileAttributesW(full);
+        if (attrs != INVALID_FILE_ATTRIBUTES && !(attrs & FILE_ATTRIBUTE_DIRECTORY)) return full;
+    }
+    return L"";
+}
+
 static std::wstring CacheDirectory() {
     wchar_t local[MAX_PATH]{};
     DWORD n = GetEnvironmentVariableW(L"LOCALAPPDATA", local, MAX_PATH);
@@ -315,10 +331,15 @@ static std::wstring FormatGb(ULONGLONG bytes) {
 }
 
 static COLORREF SegmentColor(size_t index) {
+    // Category colors stay intentionally distinct; rose-gold is reserved for brand accent.
     static const COLORREF colors[] = {
-        RGB(183, 110, 121), RGB(255, 138, 0), RGB(216, 160, 168),
-        RGB(200, 90, 0), RGB(122, 65, 75), RGB(175, 168, 163),
-        RGB(90, 60, 64), RGB(59, 39, 41), RGB(23, 18, 19)
+        RGB(88, 166, 255),   // Apps - blue
+        RGB(255, 100, 146),  // Videos - pink
+        RGB(70, 210, 190),   // Pictures - teal
+        RGB(255, 196, 92),   // Documents - amber
+        RGB(174, 125, 255),  // Audio - violet
+        RGB(255, 112, 94),   // System - coral
+        RGB(139, 148, 164)   // Other - slate
     };
     return colors[index < ARRAYSIZE(colors) ? index : ARRAYSIZE(colors) - 1];
 }
@@ -387,14 +408,28 @@ public:
 
 private:
     void LoadBrandWatermark() {
-        Gdiplus::GdiplusStartupInput input;
-        if (Gdiplus::GdiplusStartup(&gdiplusToken_, &input, nullptr) != Gdiplus::Ok) { gdiplusToken_ = 0; return; }
-        std::wstring path = ModuleDirectory() + L"\\..\\..\\assets\\AbeyyTechXy-logo.png";
-        watermark_ = Gdiplus::Image::FromFile(path.c_str(), FALSE);
-        if (!watermark_ || watermark_->GetLastStatus() != Gdiplus::Ok) { delete watermark_; watermark_ = nullptr; }
+    Gdiplus::GdiplusStartupInput input;
+    if (Gdiplus::GdiplusStartup(&gdiplusToken_, &input, nullptr) != Gdiplus::Ok) { gdiplusToken_ = 0; return; }
+    const std::wstring candidates[] = {
+        ModuleDirectory() + L"\\AbeyyTechXy-logo.png",
+        ModuleDirectory() + L"\\..\\..\\assets\\AbeyyTechXy-logo.png"
+    };
+    for (const auto& path : candidates) {
+        Gdiplus::Image* source = Gdiplus::Image::FromFile(path.c_str(), FALSE);
+        if (!source || source->GetLastStatus() != Gdiplus::Ok) { delete source; continue; }
+        const UINT width = source->GetWidth(), height = source->GetHeight();
+        if (!width || !height) { delete source; continue; }
+        Gdiplus::Bitmap* copy = new Gdiplus::Bitmap(width, height, PixelFormat32bppPARGB);
+        if (!copy || copy->GetLastStatus() != Gdiplus::Ok) { delete copy; delete source; continue; }
+        Gdiplus::Graphics graphics(copy);
+        if (graphics.DrawImage(source, 0, 0, width, height) == Gdiplus::Ok) watermark_ = copy;
+        else delete copy;
+        delete source;
+        if (watermark_) break;
     }
+}
 
-    void DrawBrandWatermark(HDC dc, const RECT& client) {
+void DrawBrandWatermark(HDC dc, const RECT& client) {
         if (!watermark_) return;
         const UINT iw = watermark_->GetWidth(), ih = watermark_->GetHeight();
         if (!iw || !ih) return;
@@ -428,7 +463,15 @@ private:
                 if (self->DrawScanButton(reinterpret_cast<DRAWITEMSTRUCT*>(lp))) return TRUE;
                 break;
             case WM_LBUTTONUP: self->Click(GET_X_LPARAM(lp), GET_Y_LPARAM(lp)); return 0;
-            case WM_TIMER: self->RefreshCaches(); InvalidateRect(hwnd, nullptr, FALSE); return 0;
+            case WM_TIMER: {
+                bool repaint = false;
+                for (const auto& d : self->drives_) {
+                    if (d.scanning) { repaint = true; break; }
+                }
+                self->RefreshCaches();
+                if (repaint) InvalidateRect(hwnd, nullptr, FALSE);
+                return 0;
+            }
             case WM_ERASEBKGND: return 1;
         }
         return DefWindowProcW(hwnd, msg, wp, lp);
@@ -503,11 +546,17 @@ private:
             if (d.scanButton == dis->hwndItem) { drive = &d; break; }
         }
         if (!drive) return false;
-        COLORREF fill = drive->scanning ? RGB(122, 65, 75) : RGB(255, 138, 0);
-        if ((dis->itemState & ODS_SELECTED) && !drive->scanning) fill = RGB(200, 90, 0);
+        COLORREF fill = drive->scanning ? RGB(255, 112, 94) : RGB(88, 166, 255);
+        if ((dis->itemState & ODS_SELECTED) && !drive->scanning) fill = RGB(68, 142, 232);
         HBRUSH brush = CreateSolidBrush(fill);
-        FillRect(dis->hDC, &dis->rcItem, brush);
+        HPEN pen = CreatePen(PS_SOLID, 1, fill);
+        HGDIOBJ oldBrush = SelectObject(dis->hDC, brush);
+        HGDIOBJ oldPen = SelectObject(dis->hDC, pen);
+        RoundRect(dis->hDC, dis->rcItem.left, dis->rcItem.top, dis->rcItem.right, dis->rcItem.bottom, 14, 14);
+        SelectObject(dis->hDC, oldBrush);
+        SelectObject(dis->hDC, oldPen);
         DeleteObject(brush);
+        DeleteObject(pen);
         SetBkMode(dis->hDC, TRANSPARENT);
         SetTextColor(dis->hDC, RGB(245, 241, 238));
         const wchar_t* text = drive->scanning ? L"Cancel Scan" : L"Scan / Refresh";
@@ -564,12 +613,14 @@ private:
     }
 
     bool StartScan(DriveCard& d) {
-        const std::wstring moduleDir = ModuleDirectory();
-        const std::wstring scanner = moduleDir + L"\\986StorageScanner.exe";
-        if (GetFileAttributesW(scanner.c_str()) == INVALID_FILE_ATTRIBUTES) {
-            d.scanError = GetLastError();
+        const std::wstring scanner = ResolveScannerPath();
+        if (scanner.empty()) {
+            d.scanError = ERROR_FILE_NOT_FOUND;
+            d.progressText = L"986 Storage scanner is missing from the installed payload.";
             return false;
         }
+        const size_t slash = scanner.find_last_of(L"\\/");
+        const std::wstring scannerDir = slash == std::wstring::npos ? ModuleDirectory() : scanner.substr(0, slash);
         CloseScanProcess(d);
         std::wstring cache = CachePath(d.root);
         std::wstring progress = ProgressPath(d.root);
@@ -579,7 +630,7 @@ private:
         std::vector<wchar_t> mutableCmd(cmd.begin(), cmd.end()); mutableCmd.push_back(L'\0');
         STARTUPINFOW si{}; si.cb = sizeof(si); si.dwFlags = STARTF_USESHOWWINDOW; si.wShowWindow = SW_HIDE;
         PROCESS_INFORMATION pi{};
-        if (!CreateProcessW(scanner.c_str(), mutableCmd.data(), nullptr, nullptr, FALSE, CREATE_NO_WINDOW, nullptr, moduleDir.c_str(), &si, &pi)) {
+        if (!CreateProcessW(scanner.c_str(), mutableCmd.data(), nullptr, nullptr, FALSE, CREATE_NO_WINDOW, nullptr, scannerDir.c_str(), &si, &pi)) {
             d.scanError = GetLastError();
             return false;
         }
@@ -643,9 +694,16 @@ private:
     }
 
     static void DrawActionChip(HDC dc, const RECT& rect, const wchar_t* text, bool enabled, bool accent) {
-        COLORREF fill = enabled ? (accent ? RGB(200, 90, 0) : RGB(90, 60, 64)) : RGB(35, 30, 31);
-        HBRUSH brush = CreateSolidBrush(fill); FillRect(dc, &rect, brush); DeleteObject(brush);
-        SetBkMode(dc, TRANSPARENT); SetTextColor(dc, enabled ? RGB(245, 241, 238) : RGB(110, 105, 102));
+        COLORREF fill = enabled ? (accent ? RGB(183, 110, 121) : RGB(45, 47, 53)) : RGB(31, 32, 36);
+        COLORREF border = enabled ? (accent ? RGB(216, 160, 168) : RGB(66, 68, 75)) : RGB(43, 44, 49);
+        HBRUSH brush = CreateSolidBrush(fill);
+        HPEN pen = CreatePen(PS_SOLID, 1, border);
+        HGDIOBJ oldBrush = SelectObject(dc, brush);
+        HGDIOBJ oldPen = SelectObject(dc, pen);
+        RoundRect(dc, rect.left, rect.top, rect.right, rect.bottom, 12, 12);
+        SelectObject(dc, oldBrush); SelectObject(dc, oldPen);
+        DeleteObject(brush); DeleteObject(pen);
+        SetBkMode(dc, TRANSPARENT); SetTextColor(dc, enabled ? RGB(242, 243, 246) : RGB(105, 108, 116));
         RECT r = rect; DrawTextW(dc, text, -1, &r, DT_CENTER | DT_VCENTER | DT_SINGLELINE | DT_END_ELLIPSIS);
     }
 
@@ -653,9 +711,13 @@ private:
         int top = 88;
         for (auto& d : drives_) {
             CardLayout layout = BuildCardLayout(client, top, d.cacheLoaded);
-            HBRUSH cardBrush = CreateSolidBrush(RGB(18, 14, 15));
-            FillRect(dc, &layout.card, cardBrush);
-            DeleteObject(cardBrush);
+            HBRUSH cardBrush = CreateSolidBrush(RGB(27, 28, 32));
+            HPEN cardPen = CreatePen(PS_SOLID, 1, RGB(52, 54, 61));
+            HGDIOBJ oldBrush = SelectObject(dc, cardBrush);
+            HGDIOBJ oldPen = SelectObject(dc, cardPen);
+            RoundRect(dc, layout.card.left, layout.card.top, layout.card.right, layout.card.bottom, 24, 24);
+            SelectObject(dc, oldBrush); SelectObject(dc, oldPen);
+            DeleteObject(cardBrush); DeleteObject(cardPen);
             top += layout.cardHeight + 18;
         }
     }
@@ -663,20 +725,21 @@ private:
     void Paint(HWND hwnd) {
         PAINTSTRUCT ps{}; HDC dc = BeginPaint(hwnd, &ps);
         RECT client{}; GetClientRect(hwnd, &client);
-        HBRUSH bg = CreateSolidBrush(RGB(0, 0, 0)); FillRect(dc, &client, bg); DeleteObject(bg);
+        HBRUSH bg = CreateSolidBrush(RGB(14, 15, 18)); FillRect(dc, &client, bg); DeleteObject(bg);
         // Two-pass composition: opaque card surfaces first, then the 25% brand watermark,
         // then all text/bars/buttons. This keeps the official logo visible without obscuring content.
         DrawCardBackgrounds(dc, client);
         DrawBrandWatermark(dc, client);
         SetBkMode(dc, TRANSPARENT); SetTextColor(dc, RGB(216, 160, 168));
-        HFONT titleFont = CreateFontW(24, 0, 0, 0, FW_SEMIBOLD, FALSE, FALSE, FALSE, DEFAULT_CHARSET, 0, 0, CLEARTYPE_QUALITY, 0, L"Segoe UI");
+        HFONT titleFont = CreateFontW(28, 0, 0, 0, FW_SEMIBOLD, FALSE, FALSE, FALSE, DEFAULT_CHARSET, 0, 0, CLEARTYPE_QUALITY, 0, L"Segoe UI");
         HFONT textFont = CreateFontW(17, 0, 0, 0, FW_NORMAL, FALSE, FALSE, FALSE, DEFAULT_CHARSET, 0, 0, CLEARTYPE_QUALITY, 0, L"Segoe UI");
         HFONT old = static_cast<HFONT>(SelectObject(dc, titleFont));
         const wchar_t* title = L"986 Storage";
         TextOutW(dc, 28, 20, title, static_cast<int>(wcslen(title)));
         SelectObject(dc, textFont);
-        const wchar_t* subtitle = L"Android-style storage breakdown inside File Explorer";
-        TextOutW(dc, 28, 52, subtitle, static_cast<int>(wcslen(subtitle)));
+        SetTextColor(dc, RGB(151, 154, 163));
+        const wchar_t* subtitle = L"A clear view of what is using your storage";
+        TextOutW(dc, 28, 54, subtitle, static_cast<int>(wcslen(subtitle)));
 
         int top = 88;
         for (auto& d : drives_) {
@@ -698,7 +761,7 @@ private:
             }
 
             RECT bar = layout.bar;
-            HBRUSH usedBase = CreateSolidBrush(RGB(59, 39, 41)); FillRect(dc, &bar, usedBase); DeleteObject(usedBase);
+            HBRUSH usedBase = CreateSolidBrush(RGB(42, 44, 50)); FillRect(dc, &bar, usedBase); DeleteObject(usedBase);
             ULONGLONG used = d.total > d.free ? d.total - d.free : 0;
             ULONGLONG values[] = { d.categories.apps, d.categories.videos, d.categories.pictures, d.categories.documents,
                 d.categories.audio, d.categories.system, d.categories.other };
@@ -717,12 +780,12 @@ private:
             if (d.total && residual) {
                 int w = static_cast<int>((static_cast<long double>(residual) / d.total) * (bar.right - bar.left));
                 RECT seg{ x, bar.top, min(x + w, bar.right), bar.bottom };
-                HBRUSH rb = CreateSolidBrush(RGB(59, 39, 41)); FillRect(dc, &seg, rb); DeleteObject(rb);
+                HBRUSH rb = CreateSolidBrush(RGB(65, 68, 76)); FillRect(dc, &seg, rb); DeleteObject(rb);
             }
             if (d.total && d.free) {
                 int w = static_cast<int>((static_cast<long double>(d.free) / d.total) * (bar.right - bar.left));
                 RECT seg{ max(bar.left, bar.right - w), bar.top, bar.right, bar.bottom };
-                HBRUSH fb = CreateSolidBrush(RGB(0, 0, 0)); FillRect(dc, &seg, fb); DeleteObject(fb);
+                HBRUSH fb = CreateSolidBrush(RGB(42, 44, 50)); FillRect(dc, &seg, fb); DeleteObject(fb);
             }
 
             SetTextColor(dc, RGB(175, 168, 163));
@@ -733,9 +796,14 @@ private:
                     const int row = i / labelColumns;
                     const int col = i % labelColumns;
                     const int labelX = left + 18 + col * columnWidth;
+                    const int y = labelY + row * 25;
+                    RECT dot{ labelX, y + 5, labelX + 9, y + 14 };
+                    HBRUSH dotBrush = CreateSolidBrush(SegmentColor(static_cast<size_t>(i)));
+                    FillRect(dc, &dot, dotBrush); DeleteObject(dotBrush);
                     std::wstring value = FormatGb(values[i]);
-                    wchar_t line[96]{}; swprintf_s(line, L"%s %s", names[i], value.c_str());
-                    TextOutW(dc, labelX, labelY + row * 25, line, static_cast<int>(wcslen(line)));
+                    wchar_t line[96]{}; swprintf_s(line, L"%s  %s", names[i], value.c_str());
+                    SetTextColor(dc, RGB(188, 191, 199));
+                    TextOutW(dc, labelX + 15, y, line, static_cast<int>(wcslen(line)));
                 }
             } else {
                 std::wstring msg;

@@ -43,6 +43,7 @@ jobs:
             'PreferenceOverride.Tests.ps1',
             'SingleSelection.Tests.ps1',
             'Resolution.Tests.ps1',
+            'Bootstrap.Tests.ps1',
             'StorageScanner.Tests.ps1',
             'StorageRegistration.Tests.ps1',
             'StorageShell.Tests.ps1',
