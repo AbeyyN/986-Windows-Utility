@@ -387,14 +387,28 @@ public:
 
 private:
     void LoadBrandWatermark() {
-        Gdiplus::GdiplusStartupInput input;
-        if (Gdiplus::GdiplusStartup(&gdiplusToken_, &input, nullptr) != Gdiplus::Ok) { gdiplusToken_ = 0; return; }
-        std::wstring path = ModuleDirectory() + L"\\..\\..\\assets\\AbeyyTechXy-logo.png";
-        watermark_ = Gdiplus::Image::FromFile(path.c_str(), FALSE);
-        if (!watermark_ || watermark_->GetLastStatus() != Gdiplus::Ok) { delete watermark_; watermark_ = nullptr; }
+    Gdiplus::GdiplusStartupInput input;
+    if (Gdiplus::GdiplusStartup(&gdiplusToken_, &input, nullptr) != Gdiplus::Ok) { gdiplusToken_ = 0; return; }
+    const std::wstring candidates[] = {
+        ModuleDirectory() + L"\\AbeyyTechXy-logo.png",
+        ModuleDirectory() + L"\\..\\..\\assets\\AbeyyTechXy-logo.png"
+    };
+    for (const auto& path : candidates) {
+        Gdiplus::Image* source = Gdiplus::Image::FromFile(path.c_str(), FALSE);
+        if (!source || source->GetLastStatus() != Gdiplus::Ok) { delete source; continue; }
+        const UINT width = source->GetWidth(), height = source->GetHeight();
+        if (!width || !height) { delete source; continue; }
+        Gdiplus::Bitmap* copy = new (std::nothrow) Gdiplus::Bitmap(width, height, PixelFormat32bppPARGB);
+        if (!copy || copy->GetLastStatus() != Gdiplus::Ok) { delete copy; delete source; continue; }
+        Gdiplus::Graphics graphics(copy);
+        if (graphics.DrawImage(source, 0, 0, width, height) == Gdiplus::Ok) watermark_ = copy;
+        else delete copy;
+        delete source;
+        if (watermark_) break;
     }
+}
 
-    void DrawBrandWatermark(HDC dc, const RECT& client) {
+void DrawBrandWatermark(HDC dc, const RECT& client) {
         if (!watermark_) return;
         const UINT iw = watermark_->GetWidth(), ih = watermark_->GetHeight();
         if (!iw || !ih) return;
