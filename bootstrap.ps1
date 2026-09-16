@@ -50,6 +50,17 @@ function Copy-986MergeItem {
     if ((Test-Path -LiteralPath $Destination) -and (Test-Path -LiteralPath $Destination -PathType Container)) {
         Remove-Item -LiteralPath $Destination -Recurse -Force
     }
+    if (Test-Path -LiteralPath $Destination -PathType Leaf) {
+        try {
+            $sourceInfo = Get-Item -LiteralPath $Source
+            $destinationInfo = Get-Item -LiteralPath $Destination
+            if ($sourceInfo.Length -eq $destinationInfo.Length) {
+                $sourceHash = (Get-FileHash -LiteralPath $Source -Algorithm SHA256).Hash
+                $destinationHash = (Get-FileHash -LiteralPath $Destination -Algorithm SHA256).Hash
+                if ($sourceHash -eq $destinationHash) { return }
+            }
+        } catch { }
+    }
     $parent = Split-Path -Parent $Destination
     if ($parent) { New-Item -ItemType Directory -Force -Path $parent | Out-Null }
     Copy-Item -LiteralPath $Source -Destination $Destination -Force
@@ -58,6 +69,7 @@ function Copy-986MergeItem {
 function Install-986StoragePayload {
     param(
         [Parameter(Mandatory)][string]$SourceStorage,
+        [Parameter(Mandatory)][string]$SourceLogo,
         [Parameter(Mandatory)][string]$Root,
         [Parameter(Mandatory)][string]$ReleaseTag,
         [Parameter(Mandatory)][bool]$RepairMode
@@ -68,6 +80,9 @@ function Install-986StoragePayload {
     $sourceShell = Join-Path $sourceBin '986StorageShell.dll'
     if (-not (Test-Path -LiteralPath $sourceShell -PathType Leaf)) {
         throw 'Release package is missing storage\bin\986StorageShell.dll.'
+    }
+    if (-not (Test-Path -LiteralPath $SourceLogo -PathType Leaf)) {
+        throw 'Release package is missing assets\AbeyyTechXy-logo.png.'
     }
 
     New-Item -ItemType Directory -Force -Path $storageRoot | Out-Null
@@ -101,7 +116,18 @@ function Install-986StoragePayload {
     $safeTag = ($ReleaseTag -replace '[^A-Za-z0-9._-]', '_')
     $versionedShellDir = Join-Path $storageRoot ("versions\" + $safeTag)
     $versionedShell = Join-Path $versionedShellDir '986StorageShell.dll'
+    $versionedLogo = Join-Path $versionedShellDir 'AbeyyTechXy-logo.png'
     New-Item -ItemType Directory -Force -Path $versionedShellDir | Out-Null
+
+    if (Test-Path -LiteralPath $versionedLogo -PathType Leaf) {
+        $sourceLogoHash = (Get-FileHash -LiteralPath $SourceLogo -Algorithm SHA256).Hash
+        $targetLogoHash = (Get-FileHash -LiteralPath $versionedLogo -Algorithm SHA256).Hash
+        if ($sourceLogoHash -ne $targetLogoHash) {
+            throw "Existing versioned Storage logo does not match $ReleaseTag. Refusing to mutate an immutable version payload."
+        }
+    } else {
+        Copy-Item -LiteralPath $SourceLogo -Destination $versionedLogo -Force
+    }
 
     if (Test-Path -LiteralPath $versionedShell -PathType Leaf) {
         $sourceHash = (Get-FileHash -LiteralPath $sourceShell -Algorithm SHA256).Hash
@@ -210,7 +236,8 @@ try {
         'display\986ResolutionHelper.exe',
         'storage\registration\Register-StorageView.ps1',
         'storage\bin\986StorageShell.dll',
-        'storage\bin\986StorageScanner.exe'
+        'storage\bin\986StorageScanner.exe',
+        'assets\AbeyyTechXy-logo.png'
     )
     foreach ($relative in $required) {
         if (-not (Test-Path (Join-Path $packageRoot.FullName $relative))) {
@@ -226,12 +253,12 @@ try {
         if ($item.Name -eq 'state') { continue }
 
         if ($item.Name -eq 'storage' -and $item.PSIsContainer) {
-            [void](Install-986StoragePayload -SourceStorage $item.FullName -Root $InstallDir -ReleaseTag ([string]$release.tag_name) -RepairMode $repairMode)
+            [void](Install-986StoragePayload -SourceStorage $item.FullName -SourceLogo (Join-Path $packageRoot.FullName 'assets\AbeyyTechXy-logo.png') -Root $InstallDir -ReleaseTag ([string]$release.tag_name) -RepairMode $repairMode)
             continue
         }
 
         $destination = Join-Path $InstallDir $item.Name
-        if ($repairMode) {
+        if ($repairMode -or ($item.Name -eq 'assets' -and $item.PSIsContainer)) {
             Copy-986MergeItem -Source $item.FullName -Destination $destination
         } else {
             if (Test-Path -LiteralPath $destination) {
