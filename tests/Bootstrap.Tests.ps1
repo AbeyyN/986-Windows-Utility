@@ -20,8 +20,14 @@ foreach ($entry in @(
     catch { throw "$($entry.Name) PowerShell syntax is invalid: $($_.Exception.Message)" }
 }
 
-foreach ($marker in 'Get-986InstalledVersion','Copy-986MergeItem','Install-986StoragePayload','versionedShellDir','repairMode','Refusing to overwrite a possibly loaded DLL','Explorer restart is not forced') {
+foreach ($marker in 'Get-986InstalledVersion','Copy-986MergeItem','Install-986StoragePayload','versionedShellDir','versionedLogo','SourceLogo','AbeyyTechXy-logo.png','repairMode','Refusing to overwrite a possibly loaded DLL','Explorer restart is not forced') {
     if ($bootstrapText -notmatch [regex]::Escape($marker)) { throw "Missing bootstrap update-safety marker: $marker" }
+}
+if ($bootstrapText -notmatch [regex]::Escape('Get-FileHash -LiteralPath $Destination -Algorithm SHA256')) {
+    throw 'Bootstrap identical-file repair guard is missing.'
+}
+if ($bootstrapText -notmatch [regex]::Escape("$item.Name -eq 'assets'")) {
+    throw 'Bootstrap must merge shared assets so an identical locked legacy logo is not replaced.'
 }
 if ($bootstrapText -notmatch [regex]::Escape('$installedVersion -eq $releaseVersion')) {
     throw 'Bootstrap same-version repair guard is missing.'
