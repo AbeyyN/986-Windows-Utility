@@ -1,3 +1,18 @@
+<!-- CANONICAL_986_FASTOPS_FLOW_20260923 -->
+## CURRENT CANONICAL INFRA / EXECUTION FLOW — 2026-09-23
+
+**PRECEDENCE:** This remark overrides older operational host-routing assumptions while preserving historical records.
+
+- **Sole active server:** `986`.
+- Active aliases for that same server: `986`, `minilab`, `ryzen`, `ryzen 7`, `4700g`, `server`, `miniserver`, `sole server`, `sole 986`.
+- `redmi` / `Redmi Build`, `986-server`, `fujitsu`, `pi`, `raspi`, `Raspberry Pi`, and `rapsi-nas` are **RETIRED / NON-EXISTENT as active server targets**. Older references remain historical only.
+- **Execution priority:** `986 FastOps` is the **PRIMARY executor**. `SentinelX` is **EMERGENCY FALLBACK / STANDBY only** when FastOps is unavailable, blocked, or recovery explicitly requires it.
+- New server-side routing, storage, build, deploy, backup, service ownership, and handoff assumptions resolve to `986`.
+- This does not rename routers, APs, workstations, phones, or other explicitly identified edge/client devices.
+- Preserve historical records; do not rewrite old host names.
+
+<!-- CANONICAL_986_FASTOPS_FLOW_20260923 -->
+
 # 986 Windows Utility — Project Workflow
 
 This file defines the public, versioned engineering workflow for 986 Windows Utility. It applies to maintainers, agents and contributors.
