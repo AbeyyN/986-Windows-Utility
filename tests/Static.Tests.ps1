@@ -39,7 +39,8 @@ foreach($mode in '\[switch\]\$AuditOnly','\[switch\]\$DoctorOnly','\[switch\]\$P
 foreach($fn in 'Get-TweakIntelligenceReport','Export-TweakAuditReport'){if($auditText -notmatch "function\s+$fn"){throw "Missing audit function: $fn"}}
 foreach($fn in 'Get-DoctorReport','Export-DoctorReport','Get-DoctorRepairPreflight','Start-DoctorRepair','Show-DoctorWindow'){if($doctorText -notmatch "function\s+$fn"){throw "Missing Doctor function: $fn"}}
 foreach($fn in 'Get-986BuiltInProfiles','Save-986CustomProfile','Get-986ProfileTweakIds'){if($profilesText -notmatch "function\s+$fn"){throw "Missing Profiles function: $fn"}}
-foreach($fn in 'Get-986LatestStableRelease','Test-986StorageShellLoaded','Start-986VerifiedUpdate','Show-986UpdateCenter'){if($updateText -notmatch "function\s+$fn"){throw "Missing Update Center function: $fn"}}
+foreach($fn in 'Get-986LatestStableRelease','Start-986VerifiedUpdate','Show-986UpdateCenter'){if($updateText -notmatch "function\s+$fn"){throw "Missing Update Center function: $fn"}}
+if ($updateText -match 'function\s+Test-986StorageShellLoaded') { throw 'Legacy loaded-shell update blocker must not return after side-by-side Storage deployment.' }
 
 $bootstrapContracts = @(
     'releases/latest',

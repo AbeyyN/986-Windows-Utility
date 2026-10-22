@@ -12,7 +12,7 @@ function ConvertTo-986Version {
 }
 
 function Get-986LatestStableRelease {
-    $headers = @{ Accept='application/vnd.github+json'; 'User-Agent'='986-Windows-Utility-UpdateCenter/1.0' }
+    $headers = @{ Accept='application/vnd.github+json'; 'User-Agent'='986-Windows-Utility-UpdateCenter/1.1' }
     $release = Invoke-RestMethod -UseBasicParsing -Uri $script:986ReleaseApi -Headers $headers
     if (-not $release -or $release.draft -or $release.prerelease) { throw 'Latest stable 986 release is unavailable.' }
     [pscustomobject]@{
@@ -25,29 +25,12 @@ function Get-986LatestStableRelease {
     }
 }
 
-function Test-986StorageShellLoaded {
-    param([Parameter(Mandatory)][string]$DllPath)
-    $target = [IO.Path]::GetFullPath($DllPath)
-    foreach ($process in @(Get-Process explorer -ErrorAction SilentlyContinue)) {
-        try {
-            foreach ($module in @($process.Modules)) {
-                if ([string]::Equals([IO.Path]::GetFullPath($module.FileName),$target,[StringComparison]::OrdinalIgnoreCase)) { return $true }
-            }
-        } catch { return $true }
-    }
-    return $false
-}
-
 function Start-986VerifiedUpdate {
     param(
         [Parameter(Mandatory)][string]$Root,
         [Parameter(Mandatory)][string]$CurrentVersion,
         [object]$OwnerWindow
     )
-    $storageDll = Join-Path $Root 'storage\bin\986StorageShell.dll'
-    if ((Test-Path $storageDll) -and (Test-986StorageShellLoaded -DllPath $storageDll)) {
-        throw '986 Storage is currently loaded by File Explorer. Close every 986 Storage window (or disable 986 Storage) before updating. 986 will not force-restart Explorer.'
-    }
     $app = Join-Path $Root '986-Windows-Utility.ps1'
     $escapedRoot = $Root.Replace("'","''")
     $escapedApp = $app.Replace("'","''")
@@ -100,7 +83,7 @@ function Show-986UpdateCenter {
     $check=$win.FindName('CheckButton'); $releaseBtn=$win.FindName('ReleaseButton'); $copy=$win.FindName('CopyButton'); $update=$win.FindName('UpdateButton')
     $script:updateRelease = $null
     $versionText.Text = "Installed: v$CurrentVersion"
-    $notes.Text = 'Check the latest stable release. Updates use the same checksum-verified 986 bootstrap used by the official short command.'
+    $notes.Text = 'Check the latest stable release. Updates use the same checksum-verified 986 bootstrap used by the official short command. 986 Storage uses side-by-side native payloads, so Explorer is never force-restarted during an update.'
     $doCheck = {
         try {
             $status.Text='Checking latest stable release...'; $update.IsEnabled=$false; $releaseBtn.IsEnabled=$false

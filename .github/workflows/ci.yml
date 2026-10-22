@@ -45,6 +45,9 @@ jobs:
       - name: Validate custom resolution safety layer
         shell: powershell
         run: .\tests\Resolution.Tests.ps1
+      - name: Validate bootstrap update lifecycle
+        shell: powershell
+        run: .\tests\Bootstrap.Tests.ps1
       - name: Compile and test storage scanner
         shell: powershell
         run: .\tests\StorageScanner.Tests.ps1
@@ -57,12 +60,20 @@ jobs:
       - name: Build complete 986 Storage payload
         shell: powershell
         run: |
-          $out = Join-Path $env:TEMP '986StorageBuild'
+          $out = Join-Path $env:RUNNER_TEMP '986StorageBuild'
           $result = .\storage\Build-StorageView.ps1 -OutputDir $out
           if (-not (Test-Path $result.Scanner)) { throw '986StorageScanner.exe missing.' }
           if (-not (Test-Path $result.Shell)) { throw '986StorageShell.dll missing.' }
           Write-Host "Scanner SHA256=$($result.ScannerSha256)"
           Write-Host "Shell SHA256=$($result.ShellSha256)"
+      - name: Upload Storage preview payload
+        if: github.event_name == 'pull_request'
+        uses: actions/upload-artifact@v4
+        with:
+          name: 986-storage-pr-${{ github.event.pull_request.number }}
+          path: ${{ runner.temp }}/986StorageBuild/*
+          if-no-files-found: error
+          retention-days: 7
       - name: WPF profile UI smoke test
         shell: powershell
         run: .\tests\Gui.Tests.ps1
