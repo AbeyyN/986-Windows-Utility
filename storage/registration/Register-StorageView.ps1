@@ -21,6 +21,44 @@ function Get-986OwnedRegistration {
     } catch { return $false }
 }
 
+function Resolve-986StorageDllPath {
+    param([Parameter(Mandatory)][string]$Path)
+
+    $resolved = [IO.Path]::GetFullPath($Path)
+    if (-not (Test-Path -LiteralPath $resolved -PathType Leaf)) {
+        throw "Storage shell DLL not found: $resolved"
+    }
+
+    # The main app historically passes storage\bin\986StorageShell.dll. New releases
+    # keep that file only as a compatibility fallback and place immutable native
+    # shell payloads under storage\versions\vX.Y.Z\. Prefer the newest valid stable
+    # version so Explorer never requires an in-place overwrite of a loaded DLL.
+    $leaf = [IO.Path]::GetFileName($resolved)
+    $binDir = Split-Path -Parent $resolved
+    if ($leaf -ieq '986StorageShell.dll' -and (Split-Path -Leaf $binDir) -ieq 'bin') {
+        $storageRoot = Split-Path -Parent $binDir
+        $versionsRoot = Join-Path $storageRoot 'versions'
+        if (Test-Path -LiteralPath $versionsRoot -PathType Container) {
+            $candidates = @(
+                foreach ($dir in @(Get-ChildItem -LiteralPath $versionsRoot -Directory -ErrorAction SilentlyContinue)) {
+                    $m = [regex]::Match($dir.Name, '^v?(\d+)\.(\d+)\.(\d+)$')
+                    if (-not $m.Success) { continue }
+                    $candidate = Join-Path $dir.FullName '986StorageShell.dll'
+                    if (-not (Test-Path -LiteralPath $candidate -PathType Leaf)) { continue }
+                    [pscustomobject]@{
+                        Version = [version]("{0}.{1}.{2}" -f $m.Groups[1].Value,$m.Groups[2].Value,$m.Groups[3].Value)
+                        Path = [IO.Path]::GetFullPath($candidate)
+                    }
+                }
+            )
+            $preferred = @($candidates | Sort-Object Version -Descending) | Select-Object -First 1
+            if ($preferred) { return [string]$preferred.Path }
+        }
+    }
+
+    return $resolved
+}
+
 function Assert-986StorageCollisionSafe {
     if ((Test-Path $ClassRoot) -and -not (Get-986OwnedRegistration -Path $ClassRoot)) {
         throw "Refusing to overwrite foreign CLSID registration: $ClassRoot"
@@ -50,8 +88,7 @@ public static class StorageShellNotify {
 
 function Install-986StorageView {
     if (-not $DllPath) { throw 'DllPath is required for Install.' }
-    $resolved = [IO.Path]::GetFullPath($DllPath)
-    if (-not (Test-Path $resolved -PathType Leaf)) { throw "Storage shell DLL not found: $resolved" }
+    $resolved = Resolve-986StorageDllPath -Path $DllPath
     Assert-986StorageCollisionSafe
 
     New-Item -ItemType Directory -Path $ClassRoot -Force | Out-Null
@@ -91,12 +128,20 @@ function Remove-986StorageView {
 function Get-986StorageViewStatus {
     $classExists = Test-Path $ClassRoot
     $namespaceExists = Test-Path $NamespaceRoot
+    $registeredDll = $null
+    if ($classExists) {
+        try {
+            $inproc = Join-Path $ClassRoot 'InprocServer32'
+            if (Test-Path $inproc) { $registeredDll = [string](Get-Item $inproc).GetValue('') }
+        } catch { }
+    }
     [pscustomobject]@{
         CLSID = $script:StorageClsid
         ClassRegistered = $classExists
         NamespaceRegistered = $namespaceExists
         Owned = ($classExists -and (Get-986OwnedRegistration -Path $ClassRoot))
         Title = $script:StorageTitle
+        RegisteredDll = $registeredDll
     }
 }
 

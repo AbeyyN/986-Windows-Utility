@@ -25,10 +25,14 @@ if ($cppText -match 'PtInRect\(&d\.scanButton') { throw 'Click dispatch must not
 foreach ($marker in 'QuoteCommandLineArg','QuoteCommandLineArg(scanner)','QuoteCommandLineArg(d.root)','QuoteCommandLineArg(cache)') {
     if ($cppText -notmatch [regex]::Escape($marker)) { throw "Missing safe scanner command-line marker: $marker" }
 }
+foreach ($marker in 'ResolveScannerPath','moduleDir + L"\\..\\..\\bin\\986StorageScanner.exe"','scannerDir.c_str()') {
+    if ($cppText -notmatch [regex]::Escape($marker)) { throw "Missing side-by-side scanner resolution marker: $marker" }
+}
 if ($cppText -match [regex]::Escape('L"\\" " + d.root')) { throw 'Drive roots must not use naive quoted trailing-backslash command-line construction.' }
-foreach ($marker in '#include <gdiplus.h>','LoadBrandWatermark','DrawBrandWatermark','AbeyyTechXy-logo.png','0.25f','DrawBrandWatermark(dc, client)') {
+foreach ($marker in '#include <gdiplus.h>','LoadBrandWatermark','DrawBrandWatermark','AbeyyTechXy-logo.png','ModuleDirectory() + L"\\AbeyyTechXy-logo.png"','Gdiplus::Bitmap* copy','delete source','0.25f','DrawBrandWatermark(dc, client)') {
     if ($cppText -notmatch [regex]::Escape($marker)) { throw "Missing 986 Storage 25% brand watermark marker: $marker" }
 }
+if ($cppText -match 'watermark_\s*=\s*Gdiplus::Image::FromFile') { throw '986 Storage must not retain a file-backed GDI+ watermark that locks the shared logo.' }
 $buildText = Get-Content (Join-Path $root 'storage\Build-StorageView.ps1') -Raw -Encoding UTF8
 if ($buildText -notmatch [regex]::Escape('gdiplus.lib')) { throw '986 Storage watermark requires GDI+ linker input.' }
 foreach ($marker in 'TopFilesPreview','TopFoldersPreview','RecommendationPreview','Storage Intelligence','Largest files','Largest folders','986 Review','never auto-deletes','JsonString') {
@@ -43,4 +47,14 @@ if ($cppText -notmatch [regex]::Escape('DrawCardBackgrounds(dc, client);')) { th
 $cardLayerCall = $cppText.IndexOf('DrawCardBackgrounds(dc, client);')
 $watermarkCall = $cppText.IndexOf('DrawBrandWatermark(dc, client);')
 if ($cardLayerCall -lt 0 -or $watermarkCall -lt 0 -or $cardLayerCall -ge $watermarkCall) { throw '986 Storage watermark must render after card backgrounds so the 25% logo remains visible.' }
-Write-Host 'PASS: Storage shell CLSID, COM surface and no-self-registration contract validated.' -ForegroundColor Green
+
+if ($cppText -match [regex]::Escape('case WM_TIMER: self->RefreshCaches(); InvalidateRect(hwnd, nullptr, FALSE); return 0;')) {
+    throw 'Storage view must not repaint the full view on every idle timer tick.'
+}
+foreach ($marker in 'case WM_TIMER: {','bool repaint = false;','if (d.scanning) { repaint = true; break; }','if (repaint) InvalidateRect(hwnd, nullptr, FALSE);') {
+    if ($cppText -notmatch [regex]::Escape($marker)) { throw "Missing idle-flicker guard marker: $marker" }
+}
+foreach ($marker in 'RGB(88, 166, 255)','RGB(70, 210, 190)','RGB(174, 125, 255)','RoundRect','A clear view of what is using your storage') {
+    if ($cppText -notmatch [regex]::Escape($marker)) { throw "Missing modern Storage UI marker: $marker" }
+}
+Write-Host 'PASS: Storage shell CLSID, COM surface, scanner resolution, modern category UI, safety, watermark lock release and idle repaint guard validated.' -ForegroundColor Green
