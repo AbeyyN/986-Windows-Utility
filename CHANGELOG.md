@@ -2,6 +2,20 @@
 
 All notable project changes are documented here.
 
+## [0.8.2] - 2026-11-25
+
+### Fixed
+- Doctor repair now captures the native process exit code and reports explicit success / failure instead of printing a generic completion message after DISM / SFC / network repairs (PR #12).
+- Storage shell update lifecycle now deploys `986StorageShell.dll` side-by-side under immutable versioned paths, allows Update Center to proceed while the previous shell DLL is still loaded, and stops the native Storage view repainting the full surface every idle 1-second timer tick (PR #11).
+
+### Changed
+- Same-version bootstrap runs are now non-destructive repair / verify operations, and Storage registration migrates to the versioned DLL without force-restarting Explorer.
+- Bootstrap version is now 1.1 with version-aware installed-version detection.
+
+### Validation
+- Windows CI passed on both PR heads; CI on the merged main runs on push to main.
+- Physical Windows validation was skipped by owner decision for this release; no physical Doctor success / failure or Storage update test evidence is recorded in the PRs.
+
 ## [0.8.1] - 2026-09-15
 
 ### Added

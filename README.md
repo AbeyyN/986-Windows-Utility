@@ -9,7 +9,7 @@ An open-source Windows utility by **AbeyyTechXy / AbeyyN** focused on safe, insp
 [![License](https://img.shields.io/github/license/AbeyyN/986-Windows-Utility?style=for-the-badge)](LICENSE)
 [![Contributors](https://img.shields.io/github/contributors/AbeyyN/986-Windows-Utility?style=for-the-badge)](https://github.com/AbeyyN/986-Windows-Utility/graphs/contributors)
 
-> **Project status:** stable v0.8.1. 986 remains a tweak-first Windows utility; active tweaks are user-editable preferences with no persistent enforcement.
+> **Project status:** stable v0.8.2. 986 remains a tweak-first Windows utility; active tweaks are user-editable preferences with no persistent enforcement.
 
 ## Why 986 Windows Utility?
 
@@ -23,7 +23,7 @@ Detect current state → Snapshot original state → Apply → Verify
 
 This is the foundation of **986 State-Aware Reversible Tweaks**.
 
-## v0.8.1 features
+## v0.8.2 features
 
 - Windows-native PowerShell 5.1 + WPF GUI
 - **30 active user-editable preference tweaks** across Explorer, Privacy, Performance, Gaming, Taskbar, Start, Personalization, Accessibility, Multitasking and Storage
@@ -44,6 +44,8 @@ This is the foundation of **986 State-Aware Reversible Tweaks**.
 - **986 Tweak Intelligence Engine** with read-only Registry, Policy, Service and Scheduled Task observations
 - cautious `986 Managed`, `WinUtil-like`, `Windows-like`, `Custom` and `Unknown` classifications
 - JSON audit export and headless `-AuditOnly` mode
+- **986 Doctor** now reports native repair exit codes, so a failed DISM / SFC / network repair is shown as failed instead of completed
+- **986 Storage** update lifecycle uses versioned shell DLL paths, so Update Center can proceed while the previous DLL is still loaded, without force-restarting Explorer
 - **986 Doctor** health dashboard for system, storage, servicing, security and network signals
 - Doctor preflight plus explicit DISM, SFC, DNS flush and Winsock repair actions
 - timestamped repair logs and privacy-hardened Doctor JSON reports

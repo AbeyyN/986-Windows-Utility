@@ -1,6 +1,6 @@
 # Roadmap
 
-**Current stable:** `v0.8.1`
+**Current stable:** `v0.8.2`
 
 ## v0.1.x — Foundation (shipped)
 
@@ -82,6 +82,15 @@
 - block in-place updates while the current Storage shell DLL is loaded; never force-restart Explorer
 - corrected Storage branding composition with user-approved 25% Storage watermark opacity
 - stable promotion only after Windows CI, native Storage build, physical scan/cancel validation, loaded-DLL update blocking and Explorer preview validation
+
+## v0.8.2 — Doctor exit codes + Storage update lifecycle (shipped)
+
+- Doctor repair captures `$LASTEXITCODE`, shows explicit success / failure with the native exit code, logs it, and propagates non-zero exit codes from the child process
+- Storage shell DLL deploys side-by-side under immutable versioned paths instead of overwriting a DLL Explorer may have loaded
+- same-version bootstrap runs are non-destructive repair / verify operations
+- Storage registration migrates to the versioned DLL without force-restarting Explorer
+- native Storage view no longer repaints the full surface on every idle 1-second timer tick
+- stable promotion after Windows CI; physical Windows validation was skipped by owner decision for this release
 
 ## v1.0 — Stable Platform (planned)
 
