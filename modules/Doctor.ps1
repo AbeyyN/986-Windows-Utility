@@ -168,7 +168,13 @@ function Start-DoctorRepair([string]$Action) {
     $exe = $def.Exe.Replace("'","''")
     $args = $def.Args.Replace("'","''")
     $logEsc = $log.Replace("'","''")
-    $body = "& '$exe' $args 2>&1 | Tee-Object -FilePath '$logEsc'; Write-Host ''; Write-Host '986 Doctor action completed. Log: $logEsc' -ForegroundColor Cyan; Read-Host 'Press Enter to close'"
+    $body = "& '$exe' $args 2>&1 | Tee-Object -FilePath '$logEsc'; " +
+            "`$repairExitCode = `$LASTEXITCODE; " +
+            "if (`$repairExitCode -eq 0) { Write-Host '986 Doctor action succeeded (exit code 0).' -ForegroundColor Green } " +
+            "else { Write-Host ('986 Doctor action failed (exit code ' + `$repairExitCode + '). Review the log.') -ForegroundColor Red }; " +
+            "Add-Content -LiteralPath '$logEsc' -Value ('986 Doctor exit code: ' + `$repairExitCode); " +
+            "Write-Host 'Log: $logEsc' -ForegroundColor Cyan; " +
+            "Read-Host 'Press Enter to close'; if (`$repairExitCode -ne 0) { exit `$repairExitCode }"
     $encoded = [Convert]::ToBase64String([Text.Encoding]::Unicode.GetBytes($body))
     Write-AppLog "DOCTOR START $Action | log=$log"
     Start-Process powershell.exe -ArgumentList '-NoProfile','-ExecutionPolicy','Bypass','-EncodedCommand',$encoded

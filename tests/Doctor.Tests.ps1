@@ -15,4 +15,9 @@ if($text -notmatch 'MessageBoxButton\]::YesNo') { throw 'Repair confirmation gua
 if($text -match '\$env:(USERNAME|COMPUTERNAME)') { throw 'Doctor report must not include username/computer name.' }
 if($text -notmatch 'UTF8Encoding\]::new\(\$false\)') { throw 'Doctor report must export UTF-8 without BOM.' }
 if($text -notmatch 'No repair runs automatically') { throw 'Doctor safety declaration missing.' }
+# Native repair failure must be reported and logged, not silently marked complete.
+if ($text -notmatch [regex]::Escape('`$repairExitCode = `$LASTEXITCODE')) { throw 'Doctor repair must capture native process exit code.' }
+if ($text -notmatch [regex]::Escape('if (`$repairExitCode -ne 0) { exit `$repairExitCode }')) { throw 'Doctor repair must propagate non-zero exit codes.' }
+if ($text -notmatch 'Add-Content -LiteralPath .*986 Doctor exit code:') { throw 'Doctor repair must record exit code in its log.' }
+if ($text -match 'Doctor action completed') { throw 'Doctor must not show ambiguous completion status.' }
 Write-Host 'PASS: Doctor diagnostics, repair definitions, privacy and confirmation guards validated.' -ForegroundColor Green
